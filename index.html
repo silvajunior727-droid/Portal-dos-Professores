@@ -4,6 +4,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>   
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>                 
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
 <script>
   const firebaseConfig = {
@@ -81,8 +82,7 @@ document.addEventListener('change', function(e) {
             break-inside: avoid !important;
             page-break-after: avoid !important; 
             break-after: avoid !important;
-        }        
-       
+        }       
 /* -----------------------------
    0) VARIÁVEIS GLOBAIS
 ------------------------------ */
@@ -10663,29 +10663,41 @@ function deletarDefinitivoLixeira(idLixeira) {
 }
 
 /* =================================================================================
-   📣 RECEPTOR DO MEGAFONE CENTRAL (VERSÃO DEFINITIVA E OTIMIZADA)
+   📣 RECEPTOR DO MEGAFONE CENTRAL (VERSÃO COM SINCRONIZAÇÃO BLINDADA)
    ================================================================================= */
-// O Firebase vai "escutar" e avisar sozinho quando o professor estiver logado:
-firebase.auth().onAuthStateChanged(function(user) {
-    if (user) {
-        // Assim que o Firebase confirmar o usuário, ele dispara o Megafone UMA ÚNICA VEZ
-        verificarEApresentarMegafone(user);
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    verificarEApresentarMegafone();
 });
 
-function verificarEApresentarMegafone(professorLogado) {
-    // Trava de segurança extra: se não vier usuário válido, ele simplesmente para silenciosamente.
-    if (!professorLogado) return;
+// Freio de segurança: conta quantas vezes já procurou o professor
+let tentativasMegafone = 0;
 
-    // A partir daqui, você pode colar o resto do seu código que exibe a caixa de aviso na tela!
-    // (Onde ele consulta o db.collection('configuracoes')...)
-    // 2. Aguarda 5 segundos para garantir que o perfil carregou 100%
+function verificarEApresentarMegafone() {
+    // 1. Tenta identificar o professor pela sua variável global ou pelo Firebase
+    const professorLogado = typeof currentUser !== 'undefined' ? currentUser : (firebase.auth().currentUser || null);
+
+    if (!professorLogado) {
+        tentativasMegafone++;
+        // Procura a cada 2 segundos, mas DESISTE após 30 tentativas (1 minuto) para não travar a tela
+        if (tentativasMegafone <= 30) {
+            console.log("Megafone: Aguardando identificação... (Tentativa " + tentativasMegafone + ")");
+            setTimeout(verificarEApresentarMegafone, 2000); 
+        } else {
+            console.log("Megafone: Busca encerrada. Professor não logado.");
+        }
+        return;
+    }
+
+    // 2. Professor encontrado! Aguarda 5 segundos para o perfil carregar 100%
     setTimeout(() => {
         db.collection('configuracoes').doc('avisoGlobal').get().then((doc) => {
             if (doc.exists) {
                 const dados = doc.data();
                 
-                // Pega o e-mail de forma segura para a chave da memória
+                // Define a infoProf globalmente para o seu botão "ENTENDI" funcionar depois
+                window.infoProf = professorLogado; 
+                
+                // Pega o e-mail de forma segura
                 const emailIdentificado = professorLogado.email || professorLogado.userEmail || "anonimo";
                 const chaveUnica = 'avisoMegafoneLido_' + emailIdentificado;
                 const avisoLidoNoNavegador = localStorage.getItem(chaveUnica);
@@ -10697,7 +10709,6 @@ function verificarEApresentarMegafone(professorLogado) {
         }).catch(err => console.log("Megafone a dormir: ", err));
     }, 5000); 
 }
-
 function mostrarAvisoMegafone(mensagem, infoProf) {
     if (document.getElementById('caixa-megafone')) return;
 
@@ -10766,5 +10777,4 @@ function mostrarAvisoMegafone(mensagem, infoProf) {
 
 </script>
 </body>
-
 </html>
