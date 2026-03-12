@@ -10663,22 +10663,22 @@ function deletarDefinitivoLixeira(idLixeira) {
 }
 
 /* =================================================================================
-   📣 RECEPTOR DO MEGAFONE CENTRAL (VERSÃO ULTRA-BLINDADA)
+   📣 RECEPTOR DO MEGAFONE CENTRAL (VERSÃO DEFINITIVA E OTIMIZADA)
    ================================================================================= */
-document.addEventListener('DOMContentLoaded', function() {
-    verificarEApresentarMegafone();
+// O Firebase vai "escutar" e avisar sozinho quando o professor estiver logado:
+firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+        // Assim que o Firebase confirmar o usuário, ele dispara o Megafone UMA ÚNICA VEZ
+        verificarEApresentarMegafone(user);
+    }
 });
 
-function verificarEApresentarMegafone() {
-    // 1. Tenta identificar o professor por várias fontes
-    const professorLogado = typeof currentUser !== 'undefined' ? currentUser : (firebase.auth().currentUser || null);
+function verificarEApresentarMegafone(professorLogado) {
+    // Trava de segurança extra: se não vier usuário válido, ele simplesmente para silenciosamente.
+    if (!professorLogado) return;
 
-    if (!professorLogado) {
-        console.log("Megafone: Aguardando identificação do professor...");
-        setTimeout(verificarEApresentarMegafone, 2000); 
-        return;
-    }
-
+    // A partir daqui, você pode colar o resto do seu código que exibe a caixa de aviso na tela!
+    // (Onde ele consulta o db.collection('configuracoes')...)
     // 2. Aguarda 5 segundos para garantir que o perfil carregou 100%
     setTimeout(() => {
         db.collection('configuracoes').doc('avisoGlobal').get().then((doc) => {
@@ -10766,4 +10766,5 @@ function mostrarAvisoMegafone(mensagem, infoProf) {
 
 </script>
 </body>
+
 </html>
