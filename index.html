@@ -7174,104 +7174,108 @@ function previewStudentListPrint() {
   win.document.close();
 }
 
+// ============================================================
+// 2. RENDERIZAÇÃO DO CALENDÁRIO (COM LEGENDA E SINCRONIZADO NA NUVEM)
+// ============================================================
 function renderCalendarioAnual() {
-    const container = document.getElementById('calendar-container-annual');
-    if (!container) return;
-    container.innerHTML = '';
+    const grid1 = document.getElementById('calendar-container-annual-1');
+    const grid2 = document.getElementById('calendar-container-annual-2');
+    const displayAno = document.getElementById('current-year-display');
     
-    const eventos = JSON.parse(localStorage.getItem('calendarEvents')) || [];
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    if (!grid1 || !grid2) {
+        return;
+    }
 
-    // 1. Renderiza os Meses
-    meses.forEach((nomeMes, indexMes) => {
-        let htmlMes = `<div class="month-card"><div class="month-name">${nomeMes}</div><div class="days-grid">
-            <div class="day-name">D</div><div class="day-name">S</div><div class="day-name">T</div>
-            <div class="day-name">Q</div><div class="day-name">Q</div><div class="day-name">S</div><div class="day-name">S</div>`;
+    // 1. Limpa legenda antiga se já existir
+    const oldLegend = document.getElementById('calendar-legend-container');
+    if (oldLegend) oldLegend.remove();
 
-        const primeiroDia = new Date(anoCalendarioAtual, indexMes, 1).getDay();
-        const diasNoMes = new Date(anoCalendarioAtual, indexMes + 1, 0).getDate();
+    // 2. Limpa os containers
+    grid1.innerHTML = '';
+    grid2.innerHTML = '';
+    
+    if(displayAno && typeof anoAtualCalendario !== 'undefined') {
+        displayAno.innerText = anoAtualCalendario;
+    }
 
-        for (let i = 0; i < primeiroDia; i++) htmlMes += `<div class="day-number empty-day"></div>`;
+    const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    
+    // --- 3. A MÁGICA DA NUVEM ACONTECE AQUI ---
+    let eventos = [];
+    if (config && config.calendarEvents && config.calendarEvents.length > 0) {
+        // Se a nuvem tem os eventos atualizados, puxa de lá!
+        eventos = config.calendarEvents;
+        // Atualiza a gaveta local silenciosamente para manter o backup
+        localStorage.setItem('calendarEvents', JSON.stringify(eventos));
+    } else {
+        // Se a nuvem estiver vazia, tenta puxar da gaveta local
+        eventos = JSON.parse(localStorage.getItem('calendarEvents')) || [];
+    }
 
-        for (let dia = 1; dia <= diasNoMes; dia++) {
-            const dataIso = `${anoCalendarioAtual}-${String(indexMes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
-            const temEvento = eventos.some(e => e.date === dataIso);
-            const classeEvento = temEvento ? 'has-event' : '';
+    // --- GERAÇÃO DOS MESES ---
+    meses.forEach((nome, i) => {
+        const targetGrid = (i < 6) ? grid1 : grid2;
+        
+        let html = `<div class="month-table"><h4>${nome}</h4><div style="display:grid; grid-template-columns: repeat(7,1fr); text-align:center; font-size:0.8em;">`;
+        ['D','S','T','Q','Q','S','S'].forEach(d => html += `<b>${d}</b>`);
+        
+        let dataAux = new Date(typeof anoAtualCalendario !== 'undefined' ? anoAtualCalendario : new Date().getFullYear(), i, 1);
+        for(let s=0; s<dataAux.getDay(); s++) html += '<div></div>';
+        
+        while(dataAux.getMonth() === i) {
+            const dia = dataAux.getDate();
+            const anoAtual = dataAux.getFullYear();
+            const dataIso = `${anoAtual}-${String(i+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
             
-            htmlMes += `<div class="day-number ${classeEvento}" onclick="abrirModalEvento('${dataIso}')">${dia}</div>`;
+            const eventoDia = eventos.find(e => e.date === dataIso);
+            const temEvento = eventoDia ? 'has-event' : '';
+            const corFinal = eventoDia ? (eventoDia.color || '#6f42c1') : 'transparent';
+            
+            const estiloDinamico = eventoDia ? `style="border: 2px solid ${corFinal} !important; color: ${corFinal} !important; transform: scale(0.85); font-weight: bold; border-radius: 6px;"` : '';
+
+            html += `<div class="calendar-day ${temEvento}" ${estiloDinamico} onclick="if(typeof abrirModalCalendario === 'function') abrirModalCalendario('${dataIso}')">${dia}</div>`;
+            dataAux.setDate(dia + 1);
         }
-        container.innerHTML += htmlMes + `</div></div>`;
+        targetGrid.innerHTML += html + `</div></div>`;
     });
 
-    // 2. Renderiza a LEGENDA (Abaixo dos meses)
+    // --- GERAÇÃO DA LEGENDA NO RODAPÉ ---
     const legendaMap = new Map();
     if (eventos && eventos.length > 0) {
         eventos.forEach(ev => {
-            // Se o evento não tiver cor, usa roxo padrão
             const cor = ev.color || '#6f42c1';
-            // Chave única: Título + Cor (evita duplicatas na legenda)
-            const chave = ev.title.trim() + '|' + cor;
-            
+            const chave = (ev.title ? ev.title.trim() : 'Evento') + '|' + cor;
             if (!legendaMap.has(chave)) {
-                legendaMap.set(chave, { title: ev.title, color: cor });
+                legendaMap.set(chave, { title: ev.title || 'Evento', color: cor });
             }
         });
     }
 
     let htmlLegenda = `
-        <div class="legend-wrapper" style="
-            width: 100%;
-            margin-top: 30px;
-            padding: 20px;
-            background: #fff;
-            border-radius: 12px;
-            border: 1px solid #e6edf3;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            page-break-inside: avoid;
+        <div id="calendar-legend-container" class="legend-wrapper" style="
+            width: 100%; margin-top: 15px; padding: 10px; background: #fff;
+            border-top: 1px solid #ddd; page-break-inside: avoid; font-family: 'Poppins', sans-serif;
         ">
-            <h4 style="
-                margin: 0 0 15px 0;
-                text-align: center;
-                color: #333;
-                font-weight: 700;
-                text-transform: uppercase;
-                font-size: 0.9em;
-                letter-spacing: 1px;
-                border-bottom: 2px solid #f0f0f0;
-                padding-bottom: 10px;
-            ">Legenda dos Eventos</h4>
-            
-            <div style="
-                display: flex;
-                flex-wrap: wrap;
-                gap: 15px;
-                justify-content: center;
-            ">
+            <h4 style="margin: 0 0 10px 0; text-align: center; color: #333; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 5px;">📋Legenda dos Eventos</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
     `;
 
     if (legendaMap.size === 0) {
-        htmlLegenda += '<span style="color: #999; font-style: italic;">Nenhum evento registrado.</span>';
+        htmlLegenda += '<span style="color: #999; font-size: 0.8em;">Nenhum evento registrado neste ano.</span>';
     } else {
         legendaMap.forEach(item => {
             htmlLegenda += `
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="
-                        width: 16px;
-                        height: 16px;
-                        background-color: ${item.color};
-                        border-radius: 4px;
-                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-                    "></div>
-                    <span style="font-size: 0.85em; color: #555; font-weight: 500;">${item.title}</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="width: 14px; height: 14px; background-color: ${item.color}; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); -webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>
+                    <span style="font-size: 0.75em; color: #444; font-weight: 500;">${item.title}</span>
                 </div>
             `;
         });
     }
     htmlLegenda += `</div></div>`;
-    
-    // Insere a legenda no container principal
-    container.insertAdjacentHTML('beforeend', htmlLegenda);
-    renderLegendaEventos();
+
+    // Insere a legenda APÓS o segundo bloco de meses
+    grid2.insertAdjacentHTML('afterend', htmlLegenda);
 }
 
 function renderLegendaEventos() {
