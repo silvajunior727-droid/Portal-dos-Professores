@@ -7917,12 +7917,47 @@ if (!localStorage.getItem('calendarEvents')) {
   localStorage.setItem('calendarEvents', JSON.stringify([]));
 }
 
+
+
 function addCalendarEvent(date, title, description) {
-  const events = JSON.parse(localStorage.getItem('calendarEvents'));
+  // 1. Prepara a lista de eventos de forma segura
+  let events = [];
+  let savedLocal = localStorage.getItem('calendarEvents');
+  
+  // Resgata o que já existia na gaveta local
+  if (savedLocal) {
+      events = JSON.parse(savedLocal);
+  }
+
+  // Mas se a nuvem já tiver eventos mais atualizados, usamos os da nuvem!
+  if (config.calendarEvents) {
+      events = config.calendarEvents;
+  }
+
+  // 2. Adiciona o novo evento na lista
   events.push({ date, title, description });
+
+  // 3. Organiza tudo por ordem cronológica (data)
   events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // 4. Guarda na variável global (que está conectada à nuvem)
+  config.calendarEvents = events;
+
+  // 5. Guarda na gaveta local para a tela do calendário saber onde ler
   localStorage.setItem('calendarEvents', JSON.stringify(events));
+
+  // 6. A MÁGICA: Empurra tudo para o Firebase instantaneamente!
+  if (typeof saveSystem === 'function') {
+      saveSystem();
+  }
+  
+  alert("✅ Evento do calendário salvo e sincronizado na nuvem com sucesso!");
+  
+  // Obs: Se você tiver uma função que atualiza a tela do calendário (ex: renderCalendar()), 
+  // ela normalmente é chamada depois daqui para a tela piscar com o novo evento.
 }
+
+
 
 function getNextCalendarEvents(limit = 5) {
   const today = new Date();
@@ -8013,6 +8048,8 @@ function renderEventTicker() {
 }
 
 let anoCalendarioAtual = 2026; // Inicia em 2026 conforme pedido
+
+
 
 function abrirModalEvento(data) {
     // 1. Define a data selecionada no campo oculto
