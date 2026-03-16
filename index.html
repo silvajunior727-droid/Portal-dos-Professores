@@ -8433,25 +8433,77 @@ function renderizarListaEventosDia(data) {
 }
 
 // ============================================================
-// 4. SALVAR, EDITAR E EXCLUIR (CALENDÁRIO: AVISA, MAS NÃO BLOQUEIA)
+// 4. SALVAR, EDITAR E EXCLUIR (VERSÃO CORRIGIDA)
 // ============================================================
 function salvarEventoPeloCalendario() {
-  const dataInicio = document.getElementById('modalDataInput')?.value;
-  const dataFim = document.getElementById('modalDataFim')?.value;
-  const isPeriodo = document.getElementById('checkPeriodo')?.checked;
+    try {
+        const dataInicio = document.getElementById('modalDataInput')?.value;
+        const dataFim = document.getElementById('modalDataFim')?.value;
+        const isPeriodo = document.getElementById('checkPeriodo')?.checked;
 
-  const titulo = document.getElementById('modalTituloInput')?.value.trim();
-  const desc = document.getElementById('modalDescInput')?.value.trim();
-  const cor = document.getElementById('modalColorInput')?.value;
-  const antigoTitulo = document.getElementById('editIndex')?.value;
+        const titulo = document.getElementById('modalTituloInput')?.value.trim();
+        const desc = document.getElementById('modalDescInput')?.value.trim();
+        const cor = document.getElementById('modalColorInput')?.value || '#6f42c1';
+        
+        if (!titulo || !dataInicio) {
+            alert("Preencha o título e a data.");
+            return;
+        }
 
-  if (!titulo || !dataInicio) return alert("Preencha o título e a data.");
+        // 1. Prepara a lista de datas
+        let datasParaSalvar = [];
+        if (isPeriodo && dataFim) {
+            let atual = new Date(dataInicio + 'T00:00:00');
+            let fim = new Date(dataFim + 'T00:00:00');
+            while (atual <= fim) {
+                datasParaSalvar.push(atual.toISOString().split('T')[0]);
+                atual.setDate(atual.getDate() + 1);
+            }
+        } else {
+            datasParaSalvar.push(dataInicio);
+        }
 
-  // ==========================================
-  // BLOCO: TRAVA ÚNICA POR DATA (DIA INTEIRO)
-  // (1) Exceções manuais do Admin (config.exceptions)
-  // (2) Regras automáticas do calendário (data não letiva)
-  // ==========================================
+        // 2. Busca eventos (Nuvem ou Local)
+        let eventos = [];
+        if (typeof config !== 'undefined' && config.calendarEvents && config.calendarEvents.length > 0) {
+            eventos = config.calendarEvents;
+        } else {
+            const localData = localStorage.getItem('calendarEvents');
+            eventos = localData ? JSON.parse(localData) : [];
+        }
+
+        // 3. Adiciona os novos
+        datasParaSalvar.forEach(d => {
+            eventos.push({ 
+                date: d, 
+                title: titulo, 
+                description: desc, 
+                color: cor 
+            });
+        });
+
+        // 4. Atualiza tudo
+        if (typeof config !== 'undefined') {
+            config.calendarEvents = eventos;
+        }
+        localStorage.setItem('calendarEvents', JSON.stringify(eventos));
+
+        // 5. Salva no Firebase
+        if (typeof saveSystem === 'function') {
+            saveSystem();
+        }
+
+        alert("✅ Evento salvo e sincronizado na nuvem!");
+        
+        if (typeof fecharModal === 'function') fecharModal();
+        if (typeof renderCalendarioAnual === 'function') renderCalendarioAnual();
+
+    } catch (err) {
+        console.error("Erro ao salvar evento:", err);
+        alert("Erro técnico ao salvar. Verifique o console.");
+    }
+}
+	
   function getBlockInfo(dateKey) {
     const res = { blocked: false, reason: "" };
     if (!dateKey) return res;
