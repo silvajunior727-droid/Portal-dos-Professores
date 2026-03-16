@@ -1976,7 +1976,8 @@ function createStudentStructure(name) {
             ]
         };
 
-        // === 2. INICIALIZAÇÃO ===
+
+// === 2. INICIALIZAÇÃO ===
 // 5️⃣ ÍNDICE 5 (Lógica do Sistema) 
         window.onload = function() {
             document.getElementById('password-change-modal').style.display = 'none';
@@ -1984,49 +1985,97 @@ function createStudentStructure(name) {
                 localStorage.removeItem('gp_v9_session'); 
                 localStorage.setItem('system_fixed_v3', 'true'); 
             }
-            const savedData = localStorage.getItem('gp_v9_data');
-            const savedMedia = localStorage.getItem('gp_v9_media');
-            const savedConfig = localStorage.getItem('gp_v9_config');
-            const savedUsers = localStorage.getItem('gp_v9_users');
-            if (savedUsers) {
-                try {
-                    let parsedUsers = JSON.parse(savedUsers);
-                    if (parsedUsers['junior@gp'] && parsedUsers['junior@gp'].displayName) { users = parsedUsers; }
-                } catch (e) { }
-            }
-            if (savedData) { masterData = JSON.parse(savedData); } 
-            else { masterData = JSON.parse(JSON.stringify(INITIAL_MASTER_DATA)); }
-            if (savedMedia) mediaConfig = JSON.parse(savedMedia);
-            if (savedConfig) { let savedCfg = JSON.parse(savedConfig); config = {...config, ...savedCfg}; }
-            if (!config.minGrade) config.minGrade = 6.0;
-            if (!config.notice) config.notice = { active: false, text: '', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', time: 0 };
-            if (!config.slideshow || !config.slideshow.images || !Array.isArray(config.slideshow.images) || config.slideshow.images.length === 0) {
-                config.slideshow = { 
-                    active: true, speed: 3000,
-                    images: [
-                        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1200&q=80',
-                        'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80'                
-                    ]
-                };
-            }
-            const sessionEmail = localStorage.getItem('gp_v9_session');
-            if (sessionEmail && users[sessionEmail] && users[sessionEmail].displayName) {
-                if (users[sessionEmail].blocked) {
-                    localStorage.removeItem('gp_v9_session');
-                    alert('Seu acesso foi bloqueado. Contate a direção.');
-                    return;
+
+            // 1. CRIAMOS UMA FUNÇÃO INTERNA PARA GARANTIR QUE A TELA SEMPRE CARREGUE
+            function continuarCarregamento(savedData, savedMedia, savedConfig, savedUsers) {
+                if (savedUsers) {
+                    try {
+                        let parsedUsers = JSON.parse(savedUsers);
+                        if (parsedUsers['junior@gp'] && parsedUsers['junior@gp'].displayName) { users = parsedUsers; }
+                    } catch (e) { }
                 }
-                currentUser = users[sessionEmail];
-                document.getElementById('login-screen').style.display = 'none';
-                renderHome();
+                if (savedData) { masterData = JSON.parse(savedData); } 
+                else { masterData = JSON.parse(JSON.stringify(INITIAL_MASTER_DATA)); }
+                
+                if (savedMedia) mediaConfig = JSON.parse(savedMedia);
+                if (savedConfig) { let savedCfg = JSON.parse(savedConfig); config = {...config, ...savedCfg}; }
+                
+                if (!config.minGrade) config.minGrade = 6.0;
+                if (!config.notice) config.notice = { active: false, text: '', color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', time: 0 };
+                if (!config.slideshow || !config.slideshow.images || !Array.isArray(config.slideshow.images) || config.slideshow.images.length === 0) {
+                    config.slideshow = { 
+                        active: true, speed: 3000,
+                        images: [
+                            'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1200&q=80',
+                            'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80'                
+                        ]
+                    };
+                }
+                
+                const sessionEmail = localStorage.getItem('gp_v9_session');
+                if (sessionEmail && users[sessionEmail] && users[sessionEmail].displayName) {
+                    if (users[sessionEmail].blocked) {
+                        localStorage.removeItem('gp_v9_session');
+                        alert('Seu acesso foi bloqueado. Contate a direção.');
+                        return;
+                    }
+                    currentUser = users[sessionEmail];
+                    document.getElementById('login-screen').style.display = 'none';
+                    renderHome(); 
+                }
             }
+
+            // 2. AGORA O SISTEMA BUSCA NA NUVEM DE FORMA INTELIGENTE
+            db.collection("portal_colegio_gp").doc("dados_gerais").get().then((doc) => {
+                // Prepara os dados puxando da gaveta local primeiro como base
+                let sData = localStorage.getItem('gp_v9_data');
+                let sMedia = localStorage.getItem('gp_v9_media');
+                let sConfig = localStorage.getItem('gp_v9_config');
+                let sUsers = localStorage.getItem('gp_v9_users');
+
+                if (doc.exists) {
+                    const dadosNuvem = doc.data();
+                    // Mescla os dados: Se a nuvem tem a informação, ela substitui a local. 
+                    // Se a nuvem estiver vazia em algum ponto, ele mantém a local salva.
+                    if (dadosNuvem.gp_v9_data) sData = dadosNuvem.gp_v9_data;
+                    if (dadosNuvem.gp_v9_media) sMedia = dadosNuvem.gp_v9_media;
+                    if (dadosNuvem.gp_v9_config) sConfig = dadosNuvem.gp_v9_config;
+                    if (dadosNuvem.gp_v9_users) sUsers = dadosNuvem.gp_v9_users;
+                }
+                
+                // Dispara o carregamento da tela
+                continuarCarregamento(sData, sMedia, sConfig, sUsers);
+
+            }).catch((error) => {
+                console.error("❌ Erro ao buscar da nuvem. Carregando dados locais por segurança: ", error);
+                // SE A INTERNET FALHAR, ELE AINDA ABRE O PORTAL COM OS DADOS LOCAIS
+                continuarCarregamento(
+                    localStorage.getItem('gp_v9_data'),
+                    localStorage.getItem('gp_v9_media'),
+                    localStorage.getItem('gp_v9_config'),
+                    localStorage.getItem('gp_v9_users')
+                );
+            });
         };
 
-        function saveSystem() {
-            localStorage.setItem('gp_v9_data', JSON.stringify(masterData));
-            localStorage.setItem('gp_v9_media', JSON.stringify(mediaConfig));
-            localStorage.setItem('gp_v9_config', JSON.stringify(config));
-        }
+
+function saveSystem() {
+    // 1. Mantém o backup local no navegador (para segurança caso a internet caia)
+    localStorage.setItem('gp_v9_data', JSON.stringify(masterData));
+    localStorage.setItem('gp_v9_media', JSON.stringify(mediaConfig));
+    localStorage.setItem('gp_v9_config', JSON.stringify(config));
+
+    // 2. Envia os dados oficiais para a nuvem do Firebase para sincronizar geral
+    db.collection("portal_colegio_gp").doc("dados_gerais").set({
+        gp_v9_data: JSON.stringify(masterData),
+        gp_v9_media: JSON.stringify(mediaConfig),
+        gp_v9_config: JSON.stringify(config)
+    }).then(() => {
+        console.log("✅ Dados sincronizados na nuvem para todos os professores!");
+    }).catch((error) => {
+        console.error("❌ Erro ao salvar na nuvem: ", error);
+    });
+}
 
 // =======================================
 // BLOCO GLOBAL: GUARDIÃO DE DATA LETIVA
@@ -4585,7 +4634,7 @@ function renderExceptionsList() {
 
 function setException(isBlocked) {
   // Permissão: só os 3 podem bloquear/liberar
-  if (!canOverrideDates()) {
+  if (typeof canOverrideDates === 'function' && !canOverrideDates()) {
     return alert("Sem permissão: apenas Coordenação/Direção pode bloquear/liberar datas.");
   }
 
@@ -4598,21 +4647,33 @@ function setException(isBlocked) {
 
   const label = labelEl ? String(labelEl.value || "").trim() : "";
 
-  const store = getExceptionsStore();
-  store[dateKey] = {
+  // 1. Garante que a "gaveta" de exceções existe dentro das configurações principais
+  if (!config.exceptions) {
+      config.exceptions = {};
+  }
+
+  // 2. Atualiza a data diretamente na memória global do portal
+  config.exceptions[dateKey] = {
     blocked: !!isBlocked,  // true = BLOQUEADO, false = LIBERADO
     label: label,
     ts: Date.now()
   };
 
-  saveExceptionsStore(store);
-  renderExceptionsList();
-  alert(isBlocked ? "Data bloqueada!" : "Data liberada!");
+  // 3. A MÁGICA ACONTECE AQUI: Chama a função principal que envia tudo para a nuvem!
+  saveSystem();
+  
+  // 4. Atualiza a lista visual na tela
+  if (typeof renderExceptionsList === 'function') {
+      renderExceptionsList();
+  }
+  
+  // 5. Dá o aviso de sucesso
+  alert(isBlocked ? "✅ Data bloqueada para todos com sucesso!" : "✅ Data liberada para todos com sucesso!");
 }
 
 function deleteException(dateKey) {
   // Permissão: só os 3 podem apagar (isso “libera” removendo a exceção)
-  if (!canOverrideDates()) {
+  if (typeof canOverrideDates === 'function' && !canOverrideDates()) {
     return alert("Sem permissão: apenas Coordenação/Direção pode apagar exceções.");
   }
 
@@ -4620,11 +4681,19 @@ function deleteException(dateKey) {
   const ok = confirm(`Apagar a exceção do dia ${dateKey}?`);
   if (!ok) return;
 
-  const store = getExceptionsStore();
-  if (store[dateKey]) delete store[dateKey];
+  // 1. Verifica se a "gaveta" de exceções existe na configuração e se a data está lá
+  if (config.exceptions && config.exceptions[dateKey]) {
+      // 2. Apaga a data da memória principal do sistema
+      delete config.exceptions[dateKey];
+      
+      // 3. Salva a exclusão na nuvem para sumir para todos
+      saveSystem();
+  }
 
-  saveExceptionsStore(store);
-  renderExceptionsList();
+  // 4. Atualiza a listagem na tela para o "X" sumir visualmente
+  if (typeof renderExceptionsList === 'function') {
+      renderExceptionsList();
+  }
 }
 
 // Regra mestre: se tiver exceção cadastrada, ela manda no dia inteiro.
