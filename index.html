@@ -1977,14 +1977,17 @@ function createStudentStructure(name) {
         };
 
 
-// === 2. INICIALIZAÇÃO ===
-// 5️⃣ ÍNDICE 5 (Lógica do Sistema) 
-        window.onload = function() {
-            document.getElementById('password-change-modal').style.display = 'none';
-            if (!localStorage.getItem('system_fixed_v3')) {
-                localStorage.removeItem('gp_v9_session'); 
-                localStorage.setItem('system_fixed_v3', 'true'); 
-            }
+window.onload = function() {
+    document.getElementById('password-change-modal').style.display = 'none';
+
+    if (!localStorage.getItem('system_fixed_v3')) {
+        localStorage.removeItem('gp_v9_session'); 
+        localStorage.setItem('system_fixed_v3', 'true'); 
+    }
+
+    // 🚀 ATIVA SEM DELAY FIXO
+    ativarSincronizacaoTempoReal();
+
 
             // 1. CRIAMOS UMA FUNÇÃO INTERNA PARA GARANTIR QUE A TELA SEMPRE CARREGUE
             function continuarCarregamento(savedData, savedMedia, savedConfig, savedUsers) {
@@ -2057,6 +2060,40 @@ function createStudentStructure(name) {
                 );
             });
         };
+
+
+
+
+
+
+
+
+async function salvarEventosNoFirebase() {
+    try {
+        if (!db) {
+            console.warn("Firebase não disponível");
+            return;
+        }
+
+        await db.collection("portal_colegio_gp")
+        .doc("dados_gerais")
+        .update({
+            calendarEvents: config.calendarEvents
+        });
+
+        console.log("☁️ Evento salvo instantaneamente no Firebase");
+
+    } catch (error) {
+        console.error("Erro ao salvar eventos:", error);
+    }
+}
+
+
+
+
+
+
+
 
 
 function saveSystem() {
@@ -3213,74 +3250,64 @@ slideshowSection = `
                     </div>
                 </div>
 
-                <button class="main-button" 
-                        style="width:100%; margin-top:10px; height:40px; 
-                               background-color: #e8f5e9 !important; 
-                               color: #2e7d32 !important; 
-                               border: 1px solid #a5d6a7 !important; 
-                               box-shadow: 0px 4px 0px #81c784 !important; /* O SEGREDO DO 3D ESTÁ AQUI */
-                               border-radius: 6px !important;
-                               font-weight: bold !important;
-                               display:flex; align-items:center; justify-content:center;" 
-                        onclick="saveSlideshowConfig()">💾 ATUALIZAR AS CONFIGURAÇÕES</button>
+    <button class="main-button" 
+                    style="width:100%; margin-top:10px; height:40px; 
+                           background-color: #e8f5e9 !important; 
+                           color: #2e7d32 !important; 
+                           border: 1px solid #a5d6a7 !important; 
+                           box-shadow: 0px 4px 0px #81c784 !important; 
+                           border-radius: 6px !important;
+                           font-weight: bold !important;
+                           display:flex; align-items:center; justify-content:center;" 
+                    onclick="saveSlideshowConfig()">💾 ATUALIZAR AS CONFIGURAÇÕES</button>
             </div>
         </div>`;
-    
-// --- FIM DO CÓDIGO CORRIGIDO ---
 
-// Reset de Senha e Bloqueio (Admin)
-        if (['Júnior', 'Sheila', 'Andressa'].some(name => currentUser.displayName.includes(name))) {
+
+
+// --- 4. ÁREA ADMINISTRATIVA SINCRONIZADA ---
+let adminResetSection = ''; 
+if (['Júnior', 'Sheila', 'Andressa'].some(name => currentUser.displayName && currentUser.displayName.includes(name))) {
             
+    let userOpts = ''; 
+    for (let email in users) { 
+        let status = users[email].blocked ? ' [🚫 BLOQUEADO]' : ''; 
+        userOpts += `<option value="${email}">${users[email].displayName} (${email})${status}</option>`; 
+    }
 
-// Trecho dentro do renderConfig que monta as opções de usuários
-let userOpts = ''; 
-for (let email in users) { 
-    let status = users[email].blocked ? ' [🚫 BLOQUEADO]' : ''; 
-    // O segredo está aqui: o VALUE é o email (ID), mas o que APARECE é o nome atualizado
-    userOpts += `<option value="${email}">${users[email].displayName} (${email})${status}</option>`; 
-}
-
-            adminResetSection = `
-<div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px;">
-    <h4 style="color:#d35400;">⚡/🔄 Admin - Reset de Senha!</h4>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <select id="admin-user-reset" class="input-admin" style="width: 510px !important;">${userOpts}</select>
-        
-        <button class="main-button" 
-                style="width:50px; height:40px; 
-                       background-color: #ededed !important; 
-                       color: #333 !important; 
-                       border: 1px solid #d1d1d1 !important; 
-                       box-shadow: 0px 4px 0px #bdbdbd !important; 
-                       border-radius: 6px !important; 
-                       display:flex; align-items:center; justify-content:center;" 
-                onclick="adminResetUser()">⚙️</button>
+    adminResetSection = `
+    <div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px;">
+        <h4 style="color:#d35400;">⚡/🔄 Admin - Reset de Senha!</h4>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <select id="admin-user-reset" class="input-admin" style="width: 510px !important;">\${userOpts}</select>
+            <button class="main-button" style="width:50px; height:40px; background-color: #ededed !important; color: #333 !important; border: 1px solid #d1d1d1 !important; box-shadow: 0px 4px 0px #bdbdbd !important; border-radius: 6px !important; display:flex; align-items:center; justify-content:center;" onclick="adminResetUser()">⚙️</button>
+        </div>
     </div>
-</div>
 
-<div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px; background: #fff0f0; padding:10px; border-radius:8px;">
-    <h4 style="color:#c0392b; margin-top:0;">🔒/🔓 Bloquear / Desbloquear!</h4>
-    <div style="display:flex; gap:10px; align-items:center;">
-        <select id="admin-user-block" class="input-admin" style="width: 500px !important;">${userOpts}</select>
-        
-        <button class="main-button" 
-                style="width:50px; height:40px; 
-                       background-color: #ffe0d6 !important; 
-                       color: #bf360c !important; 
-                       border: 1px solid #ffccbc !important; 
-                       box-shadow: 0px 4px 0px #ffab91 !important; 
-                       border-radius: 6px !important; 
-                       display:flex; align-items:center; justify-content:center;" 
-                onclick="adminToggleBlock()">
-            ⚙️
-        </button>
+    <div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px; background: #fff0f0; padding:10px; border-radius:8px;">
+        <h4 style="color:#c0392b; margin-top:0;">🔒/🔓 Bloquear / Desbloquear Professor!</h4>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <select id="admin-user-block" class="input-admin" style="width: 500px !important;">\${userOpts}</select>
+            <button class="main-button" style="width:50px; height:40px; background-color: #ffe0d6 !important; color: #bf360c !important; border: 1px solid #ffccbc !important; box-shadow: 0px 4px 0px #ffab91 !important; border-radius: 6px !important; display:flex; align-items:center; justify-content:center;" onclick="adminToggleBlock()">⚙️</button>
+        </div>
     </div>
-</div>`;
+
+    <div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px; background: #e3f2fd; padding:10px; border-radius:8px;">
+        <h4 style="color:#0d47a1; margin-top:0;">📅 Gestão de Datas e Letreiro!</h4>
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
+            <input type="date" id="admin-date-select" class="input-admin" style="width: 200px !important;">
+            <button class="main-button" style="flex:1; height:40px; background-color: #bbdefb !important; color: #0d47a1 !important; border: 1px solid #90caf9 !important; box-shadow: 0px 4px 0px #64b5f6 !important; border-radius: 6px !important; font-weight:bold; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="adminToggleDayBlock()">⚙️ Alternar Status</button>
+        </div>
+        <div id="admin-special-days-list" style="background:#fff; padding:8px; border-radius:6px; border:1px solid #bbdefb; font-size:0.85em; min-height:30px;">
+            <p style="color:#999; text-align:center; margin:0;">Carregando eventos...</p>
+        </div>
+    </div>
+    `;
+    if(typeof renderAdminSpecialDays === 'function') setTimeout(renderAdminSpecialDays, 200);
         }
     }
 
-
-    // --- 5. LÓGICA DA GRADE (A NOVA QUE VOCÊ GOSTOU) ---
+   // --- 5. LÓGICA DA GRADE (A NOVA QUE VOCÊ GOSTOU) ---
     let formGradeHTML = '';
     if (isSpecialist) {
         formGradeHTML = `
@@ -3323,8 +3350,7 @@ for (let email in users) {
                     </tr>
                 </thead>
                 <tbody>
-                    
-${myGradeList.map((g, idx) => `
+                    ${myGradeList.map((g, idx) => `
                         <tr style="border-bottom:1px solid #f0f0f0; background: ${idx % 2 === 0 ? '#fff' : '#f9f9f9'};">
                             <td style="padding:10px; text-align:left; vertical-align:middle;">
                                 <strong style="color:#0d47a1;">${g.dia}</strong><br>
@@ -3360,104 +3386,46 @@ ${myGradeList.map((g, idx) => `
             </table>
         </div>`;
     }
- 
+
 // --- 6. SEÇÃO DIÁRIO (Checkboxes) - COM VISUAL 3D APRIMORADO ---
     const currentYear = new Date().getFullYear();
     const attendanceHTML = `
         <div style="margin-bottom: 20px;">
-            
             <div class="config-toggle-header" onclick="toggleConfig('attendance-content')" 
-                 style="background-color: #e0f2f1; /* Verde-água bem clarinho */
-                        color: #00695c; /* Verde escuro */
-                        border: 1px solid #80cbc4; /* Borda média */
-                        box-shadow: 0px 4px 0px #4db6ac; /* Sombra 3D marcante */
-                        border-radius: 8px;
-                        padding: 12px 15px; 
-                        cursor: pointer; 
-                        font-weight: bold;
-                        display: flex; justify-content: space-between; align-items: center; 
-                        transition: all 0.1s;"
+                 style="background-color: #e0f2f1; color: #00695c; border: 1px solid #80cbc4; box-shadow: 0px 4px 0px #4db6ac; border-radius: 8px; padding: 12px 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; transition: all 0.1s;"
                  onmousedown="this.style.boxShadow='0px 2px 0px #4db6ac'; this.style.transform='translateY(2px)'"
                  onmouseup="this.style.boxShadow='0px 4px 0px #4db6ac'; this.style.transform='translateY(0)'"
                  onmouseleave="this.style.boxShadow='0px 4px 0px #4db6ac'; this.style.transform='translateY(0)'">
-                 
                  <span style="display:flex; align-items:center; gap:8px;">📋 Diário de Presença (Chamada)</span>
                  <span>▼</span>
             </div>
-
             <div id="attendance-content" class="config-toggle-content"
-                 style="padding: 20px; 
-                        border-left: 1px solid #e0f2f1; 
-                        border-right: 1px solid #e0f2f1; 
-                        border-bottom: 1px solid #e0f2f1; 
-                        border-radius: 0 0 8px 8px; 
-                        margin-top: 5px; 
-                        background: #fff;">
-
-              <h3 style="margin-top: 0; color: #555; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
-                    Gerar Planilha
-                </h3>
-
+                 style="padding: 20px; border-left: 1px solid #e0f2f1; border-right: 1px solid #e0f2f1; border-bottom: 1px solid #e0f2f1; border-radius: 0 0 8px 8px; margin-top: 5px; background: #fff;">
+                <h3 style="margin-top: 0; color: #555; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Gerar Planilha</h3>
                 <div style="margin-bottom:15px; background:#fafafa; padding:15px; border-radius:8px; border:1px solid #eee;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <label style="color:#444;"><b>1. Selecione as Turmas:</b></label>
-                        
-                        <button class="main-button"
-                                style="width:130px; height:35px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 3px 0px #80deea !important; border-radius: 6px !important; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s;"
-                                onclick="toggleAllClasses()"
-                                onmousedown="this.style.boxShadow='0px 1px 0px #80deea'; this.style.transform='translateY(2px)'"
-                                onmouseup="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'"
-                                onmouseleave="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'">
-                            ☑️ Todas
-                        </button>
+                        <button class="main-button" style="width:130px; height:35px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 3px 0px #80deea !important; border-radius: 6px !important; cursor: pointer; font-weight: bold;" onclick="toggleAllClasses()">☑️ Todas</button>
                     </div>
                     <div style="max-height:150px; overflow-y:auto; display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
                         ${['1º ANO A', '1º ANO B', 'INGLÊS 1º ANO B', '2º ANO A', '3º ANO A', '4º ANO A', '4º ANO B', '5º ANO A'].map((c, i) => `<div style="display:flex; align-items:center;"><input type="checkbox" id="att-cls-${i}" class="att-class-chk" value="${c}" style="width:auto; margin-right:5px;"><label for="att-cls-${i}" style="font-size:0.8em; margin:0; cursor:pointer; color:#333;">${c}</label></div>`).join('')}
                     </div>
                 </div>
-
-                <div style="margin-bottom:15px;">
-                    <label style="color:#444;"><b>2. Ano:</b></label>
-                    <input type="number" id="att-year" class="input-admin" value="${currentYear}" style="margin-left:10px; padding:5px; border-radius:4px; border:1px solid #ccc;">
-                </div>
-
-                <div class="form-group" style="background:#fafafa; padding:15px; border-radius:8px; border:1px solid #eee;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <label style="color:#444;"><b>3. Meses:</b></label>
-                        
-                        <button class="main-button"
-                                style="width:130px; height:35px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 3px 0px #80deea !important; border-radius: 6px !important; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s;"
-                                onclick="toggleAllMonths()"
-                                onmousedown="this.style.boxShadow='0px 1px 0px #80deea'; this.style.transform='translateY(2px)'"
-                                onmouseup="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'"
-                                onmouseleave="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'">
-                            ☑️ Todos
-                        </button>
-                    </div>
-                    <div style="grid-template-columns: repeat(4, 1fr); gap:8px; display:grid;">
-                        ${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'].map((m, i) => `<div style="display:flex; align-items:center; background:#fff; padding:5px; border:1px solid #ddd; border-radius:5px;"><input type="checkbox" id="att-m-${i+1}" class="att-month-chk" value="${i+1}" style="width:auto; margin-right:5px;"><label for="att-m-${i+1}" style="font-size:0.8em; margin:0; cursor:pointer; color:#333;">${m.substring(0,3)}</label></div>`).join('')}
-                    </div>
-                </div>
-
-                <button class="main-button" 
-                        style="width:100%; height:45px; margin-top:20px; 
-                               background-color: #e8f5e9 !important; 
-                               color: #1b5e20 !important; 
-                               border: 1px solid #a5d6a7 !important; 
-                               box-shadow: 0px 4px 0px #66bb6a !important; 
-                               border-radius: 6px !important; 
-                               cursor: pointer; 
-                               font-weight: bold; 
-                               display: flex; align-items: center; justify-content: center; gap: 8px; 
-                               transition: 0.1s;" 
-                        onclick="generateAttendanceSheet()"
-                        onmousedown="this.style.boxShadow='0px 2px 0px #66bb6a'; this.style.transform='translateY(2px)'"
-                        onmouseup="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'"
-                        onmouseleave="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'">
-                    📄 Gerar Diários
-                </button>
+                <button class="main-button" style="width:100%; height:45px; margin-top:20px; background-color: #e8f5e9 !important; color: #1b5e20 !important; border: 1px solid #a5d6a7 !important; box-shadow: 0px 4px 0px #66bb6a !important; border-radius: 6px !important; font-weight: bold; display: flex; align-items: center; justify-content: center;" onclick="generateAttendanceSheet()">📄 Gerar Diários</button>
             </div>
         </div>`;
+
+    // --- 7. MONTAGEM FINAL DA TELA ---
+    // Note que não há chave extra aqui no final!
+    s.innerHTML = `
+        <div class="config-page-wrapper" style="padding: 10px; padding-bottom: 80px;">
+            ${(typeof adminResetSection !== 'undefined' && adminResetSection !== '') ? adminResetSection : '<p style="color:red; font-size:0.7em;">Aviso: Modo Admin não detectado para este usuário.</p>'} 
+            ${formGradeHTML}
+            ${gradeListHTML}
+            ${attendanceHTML}
+        </div>
+    `;
+
 
 // --- 7. MONTAGEM FINAL DA TELA (JUNTANDO TUDO) ---
 s.innerHTML = `
@@ -3476,21 +3444,21 @@ s.innerHTML = `
         <div class="card">
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 
-                ${attendanceHTML} ${conselhoSection} 
+                ${adminResetSection} ${attendanceHTML} ${conselhoSection} 
 
                 <div style="margin-top:0;">
                     
                     <div class="config-toggle-header" onclick="toggleConfig('schedule-content')" 
                          style="background-color: #ede7f6; /* Lilás Pastel */
-                                color: #512da8; /* Roxo Escuro */
-                                border: 1px solid #d1c4e9; /* Borda Suave */
-                                box-shadow: 0px 4px 0px #9575cd; /* Sombra 3D Roxa */
-                                border-radius: 8px;
-                                padding: 12px 15px; 
-                                cursor: pointer; 
-                                font-weight: bold;
-                                display: flex; justify-content: space-between; align-items: center; 
-                                transition: all 0.1s;"
+                                 color: #512da8; /* Roxo Escuro */
+                                 border: 1px solid #d1c4e9; /* Borda Suave */
+                                 box-shadow: 0px 4px 0px #9575cd; /* Sombra 3D Roxa */
+                                 border-radius: 8px;
+                                 padding: 12px 15px; 
+                                 cursor: pointer; 
+                                 font-weight: bold;
+                                 display: flex; justify-content: space-between; align-items: center; 
+                                 transition: all 0.1s;"
                          onmousedown="this.style.boxShadow='0px 2px 0px #9575cd'; this.style.transform='translateY(2px)'"
                          onmouseup="this.style.boxShadow='0px 4px 0px #9575cd'; this.style.transform='translateY(0)'"
                          onmouseleave="this.style.boxShadow='0px 4px 0px #9575cd'; this.style.transform='translateY(0)'">
@@ -3501,12 +3469,12 @@ s.innerHTML = `
 
                     <div id="schedule-content" class="config-toggle-content"
                          style="padding: 20px; 
-                                border-left: 1px solid #ede7f6; 
-                                border-right: 1px solid #ede7f6; 
-                                border-bottom: 1px solid #ede7f6; 
-                                border-radius: 0 0 8px 8px; 
-                                margin-top: 5px; 
-                                background: #fff;">
+                                 border-left: 1px solid #ede7f6; 
+                                 border-right: 1px solid #ede7f6; 
+                                 border-bottom: 1px solid #ede7f6; 
+                                 border-radius: 0 0 8px 8px; 
+                                 margin-top: 5px; 
+                                 background: #fff;">
                         
                 <h3 style="margin-top: 0; color: #555; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Cadastrar Novo Horário</h3>
                         
@@ -3560,8 +3528,7 @@ s.innerHTML = `
                             onmouseup="this.style.boxShadow='0px 4px 0px #ef9a9a'; this.style.transform='translateY(0)'"
                             onmouseleave="this.style.boxShadow='0px 4px 0px #ef9a9a'; this.style.transform='translateY(0)'">
                         💾 Salvar na Grade
-                    </button>
-              
+                    </button>              
 
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-top:1px solid #eee; padding-top:10px;">
                         <h3 style="color:#c62828; margin:0;">📋 Grade Completa</h3>
@@ -4496,6 +4463,8 @@ function saveMyProfile() {
         alert('❌ Erro ao identificar seu usuário.');
     }
 }
+
+
 function adminResetUser() {
             const target = document.getElementById('admin-user-reset').value;
             if(confirm(`Resetar senha de ${target}?`)) { users[target].password = '123'; localStorage.setItem('gp_v9_users', JSON.stringify(users)); alert('Senha resetada para 123.'); }
@@ -4514,7 +4483,46 @@ function adminResetUser() {
             }
         }
 
-        function saveConfig() { for(let i=1; i<=4; i++) { config.bimesters[i].start = document.getElementById(`c-s-${i}`).value; config.bimesters[i].end = document.getElementById(`c-e-${i}`).value; } saveSystem(); alert('Salvo!'); }
+
+
+function adminToggleDayBlock() {
+    const dateKey = document.getElementById('admin-date-select').value;
+    if (!dateKey) return alert("⚠️ Por favor, selecione uma data primeiro!");
+
+    if (!config.exceptions) config.exceptions = {};
+    
+    // Verifica se o dia já está "Aberto/Letivo" (blocked === false)
+    const isCurrentlyLetivo = config.exceptions[dateKey] && config.exceptions[dateKey].blocked === false;
+
+    if (!isCurrentlyLetivo) {
+        // --- AÇÃO: VAMOS TORNAR O DIA LETIVO (DESBLOQUEAR) ---
+        const nomeEvento = prompt("🌟 DIA LETIVO ESPECIAL! Digite o nome para o letreiro:", "Festa da Família");
+        
+        if (nomeEvento === null) return; // Se cancelar o prompt, não faz nada
+
+        config.exceptions[dateKey] = {
+            blocked: false, // false = Dia Letivo (Aberto)
+            label: nomeEvento.toUpperCase()
+        };
+        alert(`✅ O dia ${dateKey} agora é LETIVO e está no Letreiro como: ${nomeEvento.toUpperCase()}`);
+    } else {
+        // --- AÇÃO: VAMOS BLOQUEAR O DIA (FERIADO/RECESSO) ---
+        if (!confirm(`Deseja BLOQUEAR o dia ${dateKey}? ele sumirá do letreiro.`)) return;
+
+        config.exceptions[dateKey] = {
+            blocked: true, // true = Dia Bloqueado
+            label: "DATA BLOQUEADA"
+        };
+        alert(`🚫 O dia ${dateKey} foi bloqueado e removido do letreiro.`);
+    }
+
+    // SALVA TUDO NA NUVEM E ATUALIZA O LETREIRO NA HORA!
+    if (typeof saveSystem === 'function') saveSystem();
+    if (typeof renderEventTicker === 'function') renderEventTicker();
+}
+
+
+function saveConfig() { for(let i=1; i<=4; i++) { config.bimesters[i].start = document.getElementById(`c-s-${i}`).value; config.bimesters[i].end = document.getElementById(`c-e-${i}`).value; } saveSystem(); alert('Salvo!'); }
         
 
 function ensureExceptionsStore() {
@@ -5626,7 +5634,7 @@ function applyConselhoAdjust(rowIndex) {
   renderConselhoBoard();
 }
 
-// 6️⃣ ÍNDICE 6 (Regras de Negócio)
+// 6️⃣ ÍNDICE 6 (Regras de Negócio - Sincronizada)
 function openClass(className) {
     currentClassContext = className;
     window.currentClassContext = className;
@@ -5635,14 +5643,19 @@ function openClass(className) {
     const s = document.getElementById('class-screen');
     s.classList.add('active');
     if(!masterData[className]) masterData[className] = [];
+    
     const currentMin = (typeof config !== 'undefined' && config.minGrade) ? config.minGrade : 6.0;
+
+    // Garante que a função de toggle exista e chame a renderização
+    window.onToggleEspecialistas = function() {
+        if (typeof renderAttend === 'function') renderAttend();
+    };
 
     s.innerHTML = `
 <div class="container">
     <div class="header">
         <h1 style="margin:0; font-size:1.8em; color:#444;">${className}</h1>
         <div style="display:flex; gap:10px; align-items:center;">
-            
             <button class="header-btn" 
                     style="background-color: #e3f2fd !important; color: #0d47a1 !important; border: 1px solid #bbdefb !important; box-shadow: 0px 4px 0px #64b5f6 !important; border-radius: 6px !important; font-weight: bold !important; height: 38px; width: 120px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.1s;" 
                     onclick="printReport()"
@@ -5651,7 +5664,6 @@ function openClass(className) {
                     onmouseleave="this.style.boxShadow='0px 4px 0px #64b5f6'; this.style.transform='translateY(0)'">
                 <span style="font-size: 1.1em;">📈</span> Boletim
             </button>
-
             <button class="header-btn" 
                     style="background-color: #ededed !important; color: #333 !important; border: 1px solid #d1d1d1 !important; box-shadow: 0px 4px 0px #bdbdbd !important; border-radius: 6px !important; font-weight: bold !important; height: 38px; width: 120px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.1s;" 
                     onclick="renderHome()"
@@ -5691,7 +5703,7 @@ function openClass(className) {
             
             <div id="divCheckEspecialistas" style="margin-top: 15px;">
                 <label style="display:flex; align-items:center; cursor:pointer; user-select:none;">    
-                    <input type="checkbox" id="chkIncluirEspecialistas" style="width: 20px; height: 20px; margin-right: 10px;" onchange="window.onToggleEspecialistas && window.onToggleEspecialistas()">
+                    <input type="checkbox" id="chkIncluirEspecialistas" style="width: 20px; height: 20px; margin-right: 10px;" onchange="window.onToggleEspecialistas()">
                     <span style="font-weight:bold; color:#d32f2f;">INCLUIR ESPECIALISTA DO DIA</span>
                 </label>
             </div>
@@ -5983,58 +5995,30 @@ function markAllPresent() {
 function saveAttend() {
   const d = document.getElementById('date-attend').value;
 
-  // --- 1. CONFIGURAÇÃO DOS HORÁRIOS (Sua Grade - MODO FLEXÍVEL) ---
-  // 0=Domingo, 1=Segunda, 2=Terça, 3=Quarta, 4=Quinta, 5=Sexta, 6=Sábado
+  // --- 1. GRADE HORÁRIA ---
   const gradeHoraria = {
-      "portugues":  [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      "matematica": [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      "historia":   [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      "geografia":  [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      "ciencias":   [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      "arte":       [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      
-      // Especialistas (Controlados também pelo Checkbox)
-      "ingles":     [1, 2, 3, 4, 5],   // Liberado de Seg a Sex
-      "edfisica":   [1, 2, 3, 4, 5]    // Liberado de Seg a Sex
-  };
-  
-  // Mapeamento dos campos no Banco de Dados (Para manter compatibilidade)
-  // Se a matéria não estiver aqui, será salva como "faltas_NOMEDAMATERIA"
-  const mapeamentoCampos = {
-      "ingles": "faltasingles",     // Nome especial usado no seu sistema antigo
-      "edfisica": "faltasedfisica"  // Nome especial usado no seu sistema antigo
+      "portugues":  [1, 2, 3, 4, 5],
+      "matematica": [1, 2, 3, 4, 5],
+      "historia":   [1, 2, 3, 4, 5],
+      "geografia":  [1, 2, 3, 4, 5],
+      "ciencias":   [1, 2, 3, 4, 5],
+      "arte":       [1, 2, 3, 4, 5],
+      "ingles":     [1, 2, 3, 4, 5],
+      "ingles_1b":  [1, 2, 3, 4, 5],
+      "edfisica":   [1, 2, 3, 4, 5]
   };
 
-  // -------------------------------------------------------------
+  if (!d) return alert("⚠️ Escolha uma data no calendário!");
 
-  // 2. Verificações de Bloqueio de Data
-  if (!d) {
-      alert("⚠️ Por favor, escolha uma data no calendário para fazer a chamada!");
-      return;
-  }
-
-  // --- 🛑 NOSSA NOVA TRAVA DE SEGURANÇA (DIAS NÃO LETIVOS) ---
+  // --- 2. VERIFICAÇÃO DE DIA LETIVO ---
   if (typeof verificarDiaLetivo === "function") {
       const checagem = verificarDiaLetivo(d);
       if (!checagem.letivo) {
-          alert(`🚫 Chamada Bloqueada: Não é possível registrar presença. Motivo: ${checagem.motivo}.`);
+          alert(`🚫 Bloqueado: ${checagem.motivo}.`);
           return;
       }
   }
-  // ----------------------------------------------------------------
 
-  // Mantendo a sua trava antiga para garantir que nada quebre:
-  const store = (config && config.exceptions) ? config.exceptions : {};
-  const ex = store[d];
-  if (ex && typeof ex.blocked === "boolean") {
-    if (ex.blocked === true) {
-      alert(`🚫 Chamada bloqueada: ${ex.label || ""}`);
-      return;
-    }
-  } else if (typeof isClassDateBlocked === "function" && isClassDateBlocked(d)) {
-    alert(`🚫 Chamada bloqueada (data não letiva).`);
-    return;
-  }
   const chks = document.querySelectorAll('.inp-att-chk');
   const justs = document.querySelectorAll('.inp-att-j');
   const combo = document.getElementById('selMateriaChamada');
@@ -6045,129 +6029,78 @@ function saveAttend() {
   const dataObj = new Date(d + "T12:00:00");
   const diaSemana = dataObj.getDay();
 
-  // Variáveis para o Relatório Final
   let materiasSalvas = [];
-  let materiasIgnoradas = [];
-  let chavesParaSalvar = []; // Lista técnica dos campos que serão gravados (ex: faltas_portugues)
+  let chavesParaSalvar = [];
 
-  // ============================================================
-  // 🧠 LÓGICA INTELIGENTE DE SELEÇÃO
-  // ============================================================
-  
+  // --- 3. LÓGICA DE SELEÇÃO ---
   if (materiaSelecionada === "TODAS") {
-      // Varre todas as matérias da grade para decidir quem entra
       for (const [materia, dias] of Object.entries(gradeHoraria)) {
           const isDiaCorreto = dias.includes(diaSemana);
-          const isEspecialista = (materia === "ingles" || materia === "edfisica");
-
-          // Regra:
-          // 1. Se for Especialista: Precisa ser o dia certo E o checkbox estar marcado.
-          // 2. Se for Matéria Comum: Basta ser o dia certo.
+          const isEspecialista = (materia === "ingles" || materia === "edfisica" || materia === "ingles_1b");
           
-          let deveSalvar = false;
-
           if (isEspecialista) {
               if (incluirEspecialistas && isDiaCorreto) {
-                  deveSalvar = true;
-              } else if (incluirEspecialistas && !isDiaCorreto) {
-                  // Usuário pediu especialistas, mas não é o dia dessa específica
-                  materiasIgnoradas.push(materia.toUpperCase()); 
+                  materiasSalvas.push(materia.toUpperCase());
+                  chavesParaSalvar.push("faltas_" + materia);
               }
-          } else {
-              // Matérias comuns (Port, Mat, Hist...)
-              if (isDiaCorreto) {
-                  deveSalvar = true;
-              } else {
-                  materiasIgnoradas.push(materia.toUpperCase());
-              }
-          }
-
-          if (deveSalvar) {
+          } else if (isDiaCorreto) {
               materiasSalvas.push(materia.toUpperCase());
-              // Define o nome do campo no banco
-              const nomeCampo = mapeamentoCampos[materia] || ("faltas_" + materia);
-              chavesParaSalvar.push(nomeCampo);
+              chavesParaSalvar.push("faltas_" + materia);
           }
       }
-      
-      // Adiciona "Geral" sempre que for TODAS
       materiasSalvas.unshift("GERAL");
+  } else {
+      materiasSalvas.push(materiaSelecionada.toUpperCase());
+      chavesParaSalvar.push("faltas_" + materiaSelecionada.toLowerCase());   
+  }
+
+// --- 4. GRAVAÇÃO NO MASTERDATA (COM REGRA DE JUSTIFICATIVA) ---
+chks.forEach((inp, i) => {
+  const idx = inp.dataset.idx;
+
+  if (!masterData[currentClassContext][idx].diary) {
+      masterData[currentClassContext][idx].diary = {};
+  }
+
+  if (!masterData[currentClassContext][idx].diary[d]) {
+      masterData[currentClassContext][idx].diary[d] = { faltas: 0, just: "" };
+  }
+
+  const justificativaTexto = justs[i].value.trim();
+  const alunoPresente = inp.checked;
+
+  const faltaValor = (alunoPresente || justificativaTexto !== "") ? 0 : 1;
+
+  masterData[currentClassContext][idx].diary[d].just = justificativaTexto;
+
+  if (materiaSelecionada === "TODAS") {
+      masterData[currentClassContext][idx].diary[d].faltas = faltaValor;
+
+      chavesParaSalvar.forEach(campo => {
+          masterData[currentClassContext][idx].diary[d][campo] = faltaValor;
+      });
 
   } else {
-      // --- SELEÇÃO INDIVIDUAL (Regra Antiga Simples) ---
-      const matLimpa = materiaSelecionada.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      
-      // Verifica se está tentando salvar no dia errado
-      if (gradeHoraria[matLimpa] && !gradeHoraria[matLimpa].includes(diaSemana)) {
-           const nomesDias = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-           const diasPermitidos = gradeHoraria[matLimpa].map(i => nomesDias[i]).join(" ou ");
-           alert(`🚫 BLOQUEADO: Aulas de ${materiaSelecionada} só podem ser salvas em: ${diasPermitidos}.`);
-           return; 
-      }
-      
-      materiasSalvas.push(materiaSelecionada.toUpperCase());
-      const nomeCampo = mapeamentoCampos[matLimpa] || ("faltas_" + materiaSelecionada);
-      chavesParaSalvar.push(nomeCampo);
+      masterData[currentClassContext][idx].diary[d][chavesParaSalvar[0]] = faltaValor;
   }
+});
 
-  // ============================================================
-  // 📝 SALVAMENTO DOS DADOS
-  // ============================================================
-
-  let conflito = false;
-  chks.forEach((inp, i) => {
-    if (inp.checked && justs[i].value.trim() !== "") {
-      conflito = true;
-      justs[i].style.border = "2px solid #FF8C00";
+// --- 5. SINCRONIZAÇÃO NUVEM (MANTIDA - NÃO ALTERAR) ---
+try {
+    if (typeof saveSystem === 'function') {
+        saveSystem();
     } else {
-      justs[i].style.border = "1px solid #ccc";
+        console.warn("⚠️ saveSystem não encontrado");
     }
-  });
-
-  if (conflito && !confirm("Conflito detectado (Presença com Justificativa). Salvar assim mesmo?")) return;
-
-  chks.forEach((inp, i) => {
-    const idx = inp.dataset.idx;
-    if (!masterData[currentClassContext][idx].diary) masterData[currentClassContext][idx].diary = {};
-    if (!masterData[currentClassContext][idx].diary[d]) masterData[currentClassContext][idx].diary[d] = { faltas: 0, just: "" };
-
-    const alunoPresente = inp.checked;
-    const faltaValor = alunoPresente ? 0 : 1;
-    
-    // Salva justificativa
-    masterData[currentClassContext][idx].diary[d].just = justs[i].value;
-
-    if (materiaSelecionada === "TODAS") {
-        // Salva a falta GERAL (obrigatório)
-        masterData[currentClassContext][idx].diary[d].faltas = faltaValor;
-
-        // Salva as matérias específicas validadas pelo dia (Português, Inglês, etc)
-        chavesParaSalvar.forEach(campo => {
-            masterData[currentClassContext][idx].diary[d][campo] = faltaValor;
-        });
-
-    } else {
-        // Salva apenas a matéria individual selecionada
-        const campoUnico = chavesParaSalvar[0];
-        masterData[currentClassContext][idx].diary[d][campoUnico] = faltaValor;
-    }
-  });
-
-  saveSystem();
-  
-  // ============================================================
-  // 📢 ALERTA FINAL DETALHADO
-  // ============================================================
-  let msgFinal = "✅ Chamada Salva com Sucesso!\n\n";
-  msgFinal += "📌 Registrado para: " + materiasSalvas.join(", ") + ".";
-  
-  if (materiasIgnoradas.length > 0) {
-      msgFinal += "\n\n⚠️ Fora do dia (não gravadas): " + materiasIgnoradas.join(", ") + ".";
-  }
-
-  alert(msgFinal);
-  renderAttend();
+} catch (error) {
+    console.error("Erro ao salvar chamada:", error);
 }
+
+alert("✅ Chamada de " + materiasSalvas.join(", ") + " salva e sincronizada!");
+renderAttend();
+
+}
+
 
 function guardDateOrStop(dateKey, contexto = "AÇÃO") {
   const st = getDateLockStatus(dateKey);
@@ -7283,6 +7216,52 @@ function renderCalendarioAnual() {
     }
 }
 
+
+
+
+
+function ativarSincronizacaoTempoReal() {
+    if (!db) {
+        console.warn("⏳ Firebase ainda não pronto... tentando novamente");
+        setTimeout(ativarSincronizacaoTempoReal, 500);
+        return;
+    }
+
+    console.log("🔥 Firebase conectado! Ativando tempo real...");
+
+    db.collection("portal_colegio_gp")
+    .doc("dados_gerais")
+    .onSnapshot((doc) => {
+        if (!doc.exists) return;
+
+        const data = doc.data();
+
+        if (data && data.calendarEvents) {
+            config.calendarEvents = data.calendarEvents;
+
+            localStorage.setItem('calendarEvents', JSON.stringify(data.calendarEvents));
+
+            if (typeof renderCalendarioAnual === "function") {
+                renderCalendarioAnual();
+            }
+
+            if (typeof renderEventTicker === "function") {
+                renderEventTicker();
+            }
+
+            console.log("⚡ ATUALIZOU EM TEMPO REAL!");
+        }
+    });
+}
+
+
+
+
+
+
+
+
+
 function renderLegendaEventos() {
     const legendContainer = document.getElementById('calendar-legend');
     if (!legendContainer) return;
@@ -7934,42 +7913,51 @@ if (!localStorage.getItem('calendarEvents')) {
 
 
 
-function addCalendarEvent(date, title, description) {
-  // 1. Prepara a lista de eventos de forma segura
-  let events = [];
-  let savedLocal = localStorage.getItem('calendarEvents');
-  
-  // Resgata o que já existia na gaveta local
-  if (savedLocal) {
-      events = JSON.parse(savedLocal);
+async function addCalendarEvent(date, title, description) { 
+  try {
+
+    // 1. 🔒 SEMPRE começa pela nuvem (fonte oficial)
+    let events = (config && config.calendarEvents) 
+        ? [...config.calendarEvents] 
+        : [];
+
+    // 2. Evita duplicação exata (PROFISSIONAL)
+    const jaExiste = events.some(e => e.date === date && e.title === title);
+    if (jaExiste) {
+        alert("⚠️ Já existe um evento com esse título nessa data.");
+        return;
+    }
+
+    // 3. Adiciona novo evento
+    events.push({ date, title, description });
+
+    // 4. Ordena por data
+    events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // 5. Atualiza memória global
+    config.calendarEvents = events;
+
+    // 6. Atualiza cache local (backup)
+    localStorage.setItem('calendarEvents', JSON.stringify(events));
+
+    // 🚀 7. SALVAMENTO PROFISSIONAL (TEMPO REAL)
+    await salvarEventosNoFirebase();
+
+    alert("✅ Evento salvo e sincronizado em tempo real!");
+
+    // 8. Atualiza tela imediatamente
+    if (typeof renderCalendarioAnual === "function") {
+        renderCalendarioAnual();
+    }
+
+    if (typeof renderEventTicker === "function") {
+        renderEventTicker();
+    }
+
+  } catch (error) {
+    console.error("Erro ao adicionar evento:", error);
+    alert("❌ Erro ao salvar evento.");
   }
-
-  // Mas se a nuvem já tiver eventos mais atualizados, usamos os da nuvem!
-  if (config.calendarEvents) {
-      events = config.calendarEvents;
-  }
-
-  // 2. Adiciona o novo evento na lista
-  events.push({ date, title, description });
-
-  // 3. Organiza tudo por ordem cronológica (data)
-  events.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  // 4. Guarda na variável global (que está conectada à nuvem)
-  config.calendarEvents = events;
-
-  // 5. Guarda na gaveta local para a tela do calendário saber onde ler
-  localStorage.setItem('calendarEvents', JSON.stringify(events));
-
-  // 6. A MÁGICA: Empurra tudo para o Firebase instantaneamente!
-  if (typeof saveSystem === 'function') {
-      saveSystem();
-  }
-  
-  alert("✅ Evento do calendário salvo e sincronizado na nuvem com sucesso!");
-  
-  // Obs: Se você tiver uma função que atualiza a tela do calendário (ex: renderCalendar()), 
-  // ela normalmente é chamada depois daqui para a tela piscar com o novo evento.
 }
 
 
@@ -7985,41 +7973,64 @@ function renderEventTicker() {
     const container = document.getElementById('eventTicker');
     if (!container) return;
 
-    // 1. Pega os eventos
-    let eventosRaw = JSON.parse(localStorage.getItem('calendarEvents')) || [];
+    // 1. BUSCA EVENTOS DO CALENDÁRIO
+    let eventosRaw = [];
+    if (typeof config !== 'undefined' && config.calendarEvents && config.calendarEvents.length > 0) {
+        eventosRaw = [...config.calendarEvents]; // Copia os eventos da nuvem
+    } else {
+        const localData = localStorage.getItem('calendarEvents');
+        eventosRaw = localData ? JSON.parse(localData) : [];
+    }
+
+    // 2. BUSCA DIAS DESBLOQUEADOS (EXCEÇÕES LETIVAS)
+    let excecoes = (typeof config !== 'undefined' && config.exceptions) ? config.exceptions : {};
     
-    // 2. PEGA A DATA DE HOJE NO FORMATO TEXTO: "2026-01-17"
-    // Isso evita qualquer erro de fuso horário ou horas!
+    for (let dataKey in excecoes) {
+        const ex = excecoes[dataKey];
+        // REGRA: Se o dia foi DESBLOQUEADO (blocked: false), ele é um dia letivo especial!
+        if (ex.blocked === false) {
+            // Verifica se esse dia já não está nos eventos para não duplicar
+            const jaExiste = eventosRaw.some(e => e.date === dataKey);
+            if (!jaExiste) {
+                eventosRaw.push({
+                    date: dataKey,
+                    title: ex.label || "Dia Letivo Especial",
+                    isException: true // Marca técnica para usarmos um ícone diferente
+                });
+            }
+        }
+    }
+    
+    // 3. PEGA A DATA DE HOJE (FORMATO "2026-03-16")
     const hojeManual = new Date();
     const ano = hojeManual.getFullYear();
     const mes = String(hojeManual.getMonth() + 1).padStart(2, '0');
     const dia = String(hojeManual.getDate()).padStart(2, '0');
     const hojeTexto = `${ano}-${mes}-${dia}`;
 
-    // 3. FILTRO: Só aceita se a data do evento for MAIOR ou IGUAL ao texto de hoje
+    // 4. FILTRO E ORDENAÇÃO: Só hoje ou futuro
     eventosRaw = eventosRaw
         .filter(ev => ev.date >= hojeTexto) 
         .sort((a, b) => a.date.localeCompare(b.date));
-
-    // ... (o resto da função continua igual)
 
     if (eventosRaw.length === 0) {
         container.innerHTML = `
             <div class="ticker-wrapper">
                 <div id="event-ticker-content">
-                    <span class="ticker-item">📅 NENHUM EVENTO PROGRAMADO PARA OS PRÓXIMOS DIAS.</span>
+                    <span class="ticker-item">📅 NENHUM EVENTO OU DIA LETIVO PROGRAMADO.</span>
                 </div>
             </div>`;
         return;
     }
 
-    // 4. Lógica de Agrupamento (Une dias seguidos com mesmo nome, ex: Férias)
+    // 5. LÓGICA DE AGRUPAMENTO (Une dias seguidos com mesmo título)
     let agrupados = [];
     if (eventosRaw.length > 0) {
         let atual = { 
             title: eventosRaw[0].title.trim().toUpperCase(), 
             start: eventosRaw[0].date, 
-            end: eventosRaw[0].date 
+            end: eventosRaw[0].date,
+            isEx: eventosRaw[0].isException
         };
 
         for (let i = 1; i < eventosRaw.length; i++) {
@@ -8034,24 +8045,27 @@ function renderEventTicker() {
                 atual.end = prox.date;
             } else {
                 agrupados.push(atual);
-                atual = { title: tituloProx, start: prox.date, end: prox.date };
+                atual = { title: tituloProx, start: prox.date, end: prox.date, isEx: prox.isException };
             }
         }
         agrupados.push(atual);
     }
 
-    // 5. REGRA SOLICITADA: Pega apenas os 5 PRIMEIROS grupos da lista renovada
+    // 6. PEGA OS 5 PRIMEIROS
     const proximos5 = agrupados.slice(0, 5);
 
-    // 6. Monta o HTML do letreiro
+    // 7. MONTAGEM DO HTML
     const htmlFinal = proximos5.map(p => {
         const dIni = p.start.split('-').reverse().slice(0, 2).join('/');
         const dFim = p.end.split('-').reverse().slice(0, 2).join('/');
         let periodoTexto = (p.start === p.end) ? dIni : `${dIni} A ${dFim}`;
+        
+        // Ícone diferente para destacar que é um dia letivo (Exceção)
+        const icone = p.isEx ? "⭐" : "📅";
 
         return `
             <span class="ticker-item">
-                <span class="ticker-icon">📅</span>
+                <span class="ticker-icon">${icone}</span>
                 <span>${periodoTexto}: ${p.title}</span>
             </span>`;
     }).join(' <span style="color: #f9a825; margin: 0 20px;">✦</span> ');
@@ -8236,44 +8250,45 @@ function renderCalendarioAnual() {
 
     const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
     
-    // --- 3. A MÁGICA DA NUVEM ACONTECE AQUI ---
-    let eventos = [];
-    if (config && config.calendarEvents && config.calendarEvents.length > 0) {
-        // Se a nuvem tem os eventos atualizados, puxa de lá!
-        eventos = config.calendarEvents;
-        // Atualiza a gaveta local silenciosamente para manter o backup
-        localStorage.setItem('calendarEvents', JSON.stringify(eventos));
-    } else {
-        // Se a nuvem estiver vazia, tenta puxar da gaveta local
-        eventos = JSON.parse(localStorage.getItem('calendarEvents')) || [];
+// --- 3. A MÁGICA DA NUVEM ACONTECE AQUI ---
+let eventos = [];
+
+// 🔒 SEMPRE usa a nuvem como fonte principal
+if (config && config.calendarEvents) {
+    eventos = config.calendarEvents;
+
+    // Atualiza o cache local só como backup
+    localStorage.setItem('calendarEvents', JSON.stringify(eventos));
+} else {
+    eventos = [];
+}
+
+// --- GERAÇÃO DOS MESES ---
+meses.forEach((nome, i) => {
+    const targetGrid = (i < 6) ? grid1 : grid2;
+    
+    let html = `<div class="month-table"><h4>${nome}</h4><div style="display:grid; grid-template-columns: repeat(7,1fr); text-align:center; font-size:0.8em;">`;
+    ['D','S','T','Q','Q','S','S'].forEach(d => html += `<b>${d}</b>`);
+    
+    let dataAux = new Date(typeof anoAtualCalendario !== 'undefined' ? anoAtualCalendario : new Date().getFullYear(), i, 1);
+    for(let s=0; s<dataAux.getDay(); s++) html += '<div></div>';
+    
+    while(dataAux.getMonth() === i) {
+        const dia = dataAux.getDate();
+        const anoAtual = dataAux.getFullYear();
+        const dataIso = `${anoAtual}-${String(i+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+        
+        const eventoDia = eventos.find(e => e.date === dataIso);
+        const temEvento = eventoDia ? 'has-event' : '';
+        const corFinal = eventoDia ? (eventoDia.color || '#6f42c1') : 'transparent';
+        
+        const estiloDinamico = eventoDia ? `style="border: 2px solid ${corFinal} !important; color: ${corFinal} !important; transform: scale(0.85); font-weight: bold; border-radius: 6px;"` : '';
+
+        html += `<div class="calendar-day ${temEvento}" ${estiloDinamico} onclick="if(typeof abrirModalCalendario === 'function') abrirModalCalendario('${dataIso}')">${dia}</div>`;
+        dataAux.setDate(dia + 1);
     }
-
-    // --- GERAÇÃO DOS MESES ---
-    meses.forEach((nome, i) => {
-        const targetGrid = (i < 6) ? grid1 : grid2;
-        
-        let html = `<div class="month-table"><h4>${nome}</h4><div style="display:grid; grid-template-columns: repeat(7,1fr); text-align:center; font-size:0.8em;">`;
-        ['D','S','T','Q','Q','S','S'].forEach(d => html += `<b>${d}</b>`);
-        
-        let dataAux = new Date(typeof anoAtualCalendario !== 'undefined' ? anoAtualCalendario : new Date().getFullYear(), i, 1);
-        for(let s=0; s<dataAux.getDay(); s++) html += '<div></div>';
-        
-        while(dataAux.getMonth() === i) {
-            const dia = dataAux.getDate();
-            const anoAtual = dataAux.getFullYear();
-            const dataIso = `${anoAtual}-${String(i+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
-            
-            const eventoDia = eventos.find(e => e.date === dataIso);
-            const temEvento = eventoDia ? 'has-event' : '';
-            const corFinal = eventoDia ? (eventoDia.color || '#6f42c1') : 'transparent';
-            
-            const estiloDinamico = eventoDia ? `style="border: 2px solid ${corFinal} !important; color: ${corFinal} !important; transform: scale(0.85); font-weight: bold; border-radius: 6px;"` : '';
-
-            html += `<div class="calendar-day ${temEvento}" ${estiloDinamico} onclick="if(typeof abrirModalCalendario === 'function') abrirModalCalendario('${dataIso}')">${dia}</div>`;
-            dataAux.setDate(dia + 1);
-        }
-        targetGrid.innerHTML += html + `</div></div>`;
-    });
+    targetGrid.innerHTML += html + `</div></div>`;
+});
 
     // --- GERAÇÃO DA LEGENDA NO RODAPÉ ---
     const legendaMap = new Map();
@@ -8415,10 +8430,7 @@ function renderizarListaEventosDia(data) {
 
 
 
-// ============================================================
-// 4. SALVAR, EDITAR E EXCLUIR (VERSÃO CORRIGIDA)
-// ============================================================
-function salvarEventoPeloCalendario() {
+async function salvarEventoPeloCalendario() {
     try {
         const dataInicio = document.getElementById('modalDataInput')?.value;
         const dataFim = document.getElementById('modalDataFim')?.value;
@@ -8433,57 +8445,82 @@ function salvarEventoPeloCalendario() {
             return;
         }
 
-        // 1. Prepara a lista de datas
-        let datasParaSalvar = [];
+        // 🔒 SEMPRE CARREGA DA NUVEM PRIMEIRO
+        let eventos = (config && config.calendarEvents) ? [...config.calendarEvents] : [];
+
+        // Validação de período
+        if (isPeriodo && dataFim) {
+            const ini = new Date(dataInicio + 'T00:00:00');
+            const fim = new Date(dataFim + 'T00:00:00');
+            if (fim < ini) return alert("A data final deve ser depois da inicial!");
+        }
+
+        // Funções auxiliares (mantidas)
+        function getBlockInfo(dateKey) {
+            const res = { blocked: false, reason: "" };
+            const store = (config && config.exceptions) ? config.exceptions : {};
+            const ex = store[dateKey];
+
+            if (ex && typeof ex.blocked === "boolean") {
+                res.blocked = !!ex.blocked;
+                res.reason = ex.label || "Bloqueado";
+                return res;
+            }
+
+            if (typeof isClassDateBlocked === "function" && isClassDateBlocked(dateKey)) {
+                res.blocked = true;
+                res.reason = "Data não letiva";
+            }
+
+            return res;
+        }
+
+        function warnIfBlocked(dateKey) {
+            const info = getBlockInfo(dateKey);
+            if (info.blocked) {
+                alert(`ATENÇÃO: ${dateKey} está bloqueada (${info.reason})`);
+            }
+        }
+
+        // SALVAR EVENTOS
         if (isPeriodo && dataFim) {
             let atual = new Date(dataInicio + 'T00:00:00');
-            let fim = new Date(dataFim + 'T00:00:00');
-            while (atual <= fim) {
-                datasParaSalvar.push(atual.toISOString().split('T')[0]);
+            let limite = new Date(dataFim + 'T00:00:00');
+
+            while (atual <= limite) {
+                const dataIso = atual.toISOString().split('T')[0];
+
+                warnIfBlocked(dataIso);
+
+                if (!eventos.some(e => e.date === dataIso && e.title === titulo)) {
+                    eventos.push({ date: dataIso, title: titulo, description: desc, color: cor });
+                }
+
                 atual.setDate(atual.getDate() + 1);
             }
         } else {
-            datasParaSalvar.push(dataInicio);
+            warnIfBlocked(dataInicio);
+
+            eventos.push({ date: dataInicio, title: titulo, description: desc, color: cor }); 
         }
 
-        // 2. Busca eventos (Nuvem ou Local)
-        let eventos = [];
-        if (typeof config !== 'undefined' && config.calendarEvents && config.calendarEvents.length > 0) {
-            eventos = config.calendarEvents;
-        } else {
-            const localData = localStorage.getItem('calendarEvents');
-            eventos = localData ? JSON.parse(localData) : [];
-        }
-
-        // 3. Adiciona os novos
-        datasParaSalvar.forEach(d => {
-            eventos.push({ 
-                date: d, 
-                title: titulo, 
-                description: desc, 
-                color: cor 
-            });
-        });
-
-        // 4. Atualiza tudo
-        if (typeof config !== 'undefined') {
-            config.calendarEvents = eventos;
-        }
+        // 🔥 ATUALIZA TUDO CORRETAMENTE
+        config.calendarEvents = eventos;
         localStorage.setItem('calendarEvents', JSON.stringify(eventos));
 
-        // 5. Salva no Firebase
         if (typeof saveSystem === 'function') {
             saveSystem();
         }
 
-        alert("✅ Evento salvo e sincronizado na nuvem!");
-        
-        if (typeof fecharModal === 'function') fecharModal();
-        if (typeof renderCalendarioAnual === 'function') renderCalendarioAnual();
+        alert("✅ Evento salvo com sucesso!");
+
+        fecharModal();
+        renderCalendarioAnual();
+        renderEventTicker();
 
     } catch (err) {
         console.error("Erro ao salvar evento:", err);
-        alert("Erro técnico ao salvar. Verifique o console.");
+        alert("Erro técnico ao salvar.");
     }
 
 
@@ -8583,52 +8620,31 @@ function salvarEventoPeloCalendario() {
 
 // 3. FUNÇÃO EXCLUIR COM AVISO (PODE EXCLUIR MESMO BLOQUEADO)
 function excluirEvento(data, titulo) {
+    if (!confirm(`Deseja excluir "${titulo}"?`)) return;
 
-  // --- checagem de bloqueio (apenas AVISA; não impede) ---
-  const store = (config && config.exceptions) ? config.exceptions : {};
-  const ex = store[data];
+    let eventos = [];
 
-  let bloqueado = false;
-  let motivo = "";
-
-  // 1) Exceção manual manda no dia inteiro
-  if (ex && typeof ex.blocked === "boolean") {
-    bloqueado = (ex.blocked === true);
-    motivo = ex.label ? String(ex.label).trim() : "";
-  } else {
-    // 2) Sem exceção => cai na regra automática
-    if (typeof isClassDateBlocked === "function" && isClassDateBlocked(data)) {
-      bloqueado = true;
+    // Pega da nuvem se existir
+    if (config && config.calendarEvents) {
+        eventos = config.calendarEvents;
+    } else {
+        eventos = JSON.parse(localStorage.getItem('calendarEvents')) || []; 
     }
-  }
 
-  if (bloqueado) {
-    const okAviso = confirm(
-      `⚠️ ATENÇÃO: esta data (${data}) está BLOQUEADA.${motivo ? "\nMotivo: " + motivo : ""}\n\nOs 3 podem excluir mesmo assim.\nDeseja continuar?`
-    );
-    if (!okAviso) return;
-  }
-
-  // --- sua lógica original (mantida) ---
-  const mensagem = `Deseja excluir "${titulo}"?\n\nOK = excluir TODAS as ocorrências.\nCancelar = excluir APENAS este dia.`;
-  const excluirTudo = confirm(mensagem);
-
-  let eventos = JSON.parse(localStorage.getItem('calendarEvents')) || [];
-
-  if (excluirTudo) {
-    eventos = eventos.filter(e => e.title !== titulo);
-  } else {
+    // Remove
     eventos = eventos.filter(e => !(e.date === data && e.title === titulo));
-  }
 
-  localStorage.setItem('calendarEvents', JSON.stringify(eventos));
+    // Atualiza tudo
+    config.calendarEvents = eventos;
+    localStorage.setItem('calendarEvents', JSON.stringify(eventos));
 
-  // Atualiza a visualização na hora
-  if (typeof renderizarListaEventosDia === "function") renderizarListaEventosDia(data);
-  else if (typeof listarEventosDoDia === "function") listarEventosDoDia(data);
+    // 🔥 ESSA LINHA É O SEGREDO
+    if (typeof saveSystem === 'function') {
+        saveSystem();
+    }
 
-  renderCalendarioAnual();
-  renderEventTicker();
+    renderCalendarioAnual();
+    renderEventTicker();
 }
 
 function fecharModal() { 
@@ -10613,6 +10629,151 @@ function mostrarAvisoMegafone(mensagem, infoProf) {
     };
 }
 
+// --- FUNÇÃO 1: GERENCIA O BLOQUEIO/DESBLOQUEIO ---
+function adminToggleDayBlock() {
+    const dateKey = document.getElementById('admin-date-select').value;
+    if (!dateKey) return alert("⚠️ Selecione uma data primeiro!");
+
+    if (!config.exceptions) config.exceptions = {};
+    
+    // Verifica se já existe e se não está bloqueado
+    const isCurrentlyLetivo = config.exceptions[dateKey] && config.exceptions[dateKey].blocked === false;
+
+    if (!isCurrentlyLetivo) {
+        const nomeEvento = prompt("🌟 DIA LETIVO ESPECIAL! Digite o nome:", "Festa da Família");
+        if (nomeEvento === null) return; 
+        config.exceptions[dateKey] = { blocked: false, label: nomeEvento.toUpperCase() };
+    } else {
+        if (!confirm(`Deseja BLOQUEAR o dia ${dateKey}?`)) return;
+        config.exceptions[dateKey] = { blocked: true, label: "DATA BLOQUEADA" };
+    }
+
+    // Salva e atualiza tudo
+    if (typeof saveSystem === 'function') saveSystem();
+    if (typeof renderEventTicker === 'function') renderEventTicker();
+    renderAdminSpecialDays(); 
+}
+
+// --- FUNÇÃO 1: DESENHAR A LISTA (COM ONMOUSEDOWN INFALÍVEL) ---
+window.renderAdminSpecialDays = function() {
+    const listDiv = document.getElementById('admin-special-days-list');
+    if (!listDiv) return;
+
+    let excecoes = (config && config.exceptions) ? config.exceptions : {};
+    let html = "<div style='font-weight:bold; color:#0d47a1; margin-bottom:10px;'>Ativos no Letreiro:</div>";  
+    let encontrou = false;
+
+    Object.keys(excecoes).sort().forEach(dataKey => {
+        if (excecoes[dataKey] && excecoes[dataKey].blocked === false) {
+            encontrou = true;
+            const dataExibicao = dataKey.split('-').reverse().join('/');
+            
+            // O SEGREDO 1: onmousedown em vez de onclick (ignora qualquer bloqueio)
+            html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid #f0f0f0; background:#fff;">
+                    <span style="font-size:0.9em; color:#333;">⭐ <b>${dataExibicao}</b>: ${excecoes[dataKey].label}</span>
+               <button type="button" onclick="window.adminDeleteDate('${dataKey}')" 
+        style="background:#ffebee; border:1px solid #ffcdd2; color:#c62828; cursor:pointer; padding:5px 10px; border-radius:6px; font-weight:bold;">
+    🗑️ Apagar
+</button>
+                </div>`;
+        }
+    });
+
+    listDiv.innerHTML = encontrou ? html : "<div style='text-align:center; padding:10px; color:#999; font-style:italic;'>Sem eventos ativos no momento.</div>";
+};
+
+// --- FUNÇÃO 2: O APAGADOR DEFINITIVO (DIRETO NO FIREBASE) ---
+window.apagarDataMestre = function(dateKey) {
+    if (!confirm("🚨 Tem certeza que deseja apagar a data " + dateKey + " DEFINITIVAMENTE?")) return;
+
+    try {
+        if (config && config.exceptions && config.exceptions[dateKey]) {
+            
+            // 1. Remove a data do objeto config
+            delete config.exceptions[dateKey]; 
+
+            // 2. Transforma o config corrigido em texto (pois é assim que seu Firebase salva)
+            const configTexto = JSON.stringify(config);
+
+            // 3. Salva no navegador por segurança
+            localStorage.setItem('gp_v9_config', configTexto);
+
+            // 4. Manda a alteração direto para o Firebase
+            db.collection("portal_colegio_gp").doc("dados_gerais").set({
+                gp_v9_config: configTexto
+            }, { merge: true }).then(() => {
+                
+                // 5. Atualiza a lista visualmente na hora
+                window.renderAdminSpecialDays();
+                if (typeof renderEventTicker === 'function') renderEventTicker();
+                
+                alert("✅ DATA APAGADA COM SUCESSO! O letreiro está atualizado.");
+                
+            }).catch((erro) => {
+                alert("❌ Erro ao apagar na nuvem: " + erro.message);
+            });
+
+        } else {
+            alert("⚠️ Data já foi apagada ou não existe.");
+        }
+    } catch (err) {
+        alert("🚨 Erro crítico: " + err.message);
+    }
+};
+
+
+
+// --- O APAGADOR DEFINITIVO (DIRETO NO FIREBASE) ---
+window.adminDeleteDate = async function(dateKey) {
+    if (!confirm("🚨 Confirma a exclusão DEFINITIVA da data " + dateKey + "?")) return;
+
+    try {
+        // 1. Conecta direto na nuvem e puxa o documento do portal
+        const docRef = db.collection("portal_colegio_gp").doc("dados_gerais");
+        const docSnap = await docRef.get();
+
+        if (docSnap.exists) {
+            let dadosNuvem = docSnap.data();
+            
+            if (dadosNuvem.gp_v9_config) {
+                // 2. Desempacota o texto exato que está salvo no Firebase
+                let configNuvem = JSON.parse(dadosNuvem.gp_v9_config);
+
+                // 3. Verifica se a data está lá e a EXTERMINA do objeto da nuvem
+                if (configNuvem.exceptions && configNuvem.exceptions[dateKey]) {
+                    delete configNuvem.exceptions[dateKey];
+
+                    // 4. Empacota tudo novamente em texto (agora sem a data)
+                    const novoTextoConfig = JSON.stringify(configNuvem);
+
+                    // 5. Envia o texto limpo direto para o Firebase, sobrescrevendo o antigo
+                    await docRef.update({
+                        gp_v9_config: novoTextoConfig
+                    });
+
+                    // 6. Atualiza as variáveis locais à força para a tela não bugar
+                    config = configNuvem; 
+                    localStorage.setItem('gp_v9_config', novoTextoConfig);
+                    
+                    // 7. Atualiza o letreiro e a lista na tela
+                    if (typeof renderAdminSpecialDays === 'function') renderAdminSpecialDays();
+                    if (typeof renderEventTicker === 'function') renderEventTicker();
+                    
+                    alert("✅ DELETADO COM SUCESSO! A data foi arrancada direto do banco de dados.");
+                } else {
+                    alert("⚠️ A data já não estava salva na nuvem. Atualize a página.");
+                }
+            }
+        }
+    } catch (erro) {
+        alert("🚨 Erro crítico ao acessar o Firebase: " + erro.message);
+        console.error(erro);
+    }
+};
+
+// --- GARANTIA EXTRA: Chama o render ao carregar para testar os botões
+setTimeout(renderAdminSpecialDays, 500);
 </script>
 </body>
 </html>
