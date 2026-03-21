@@ -1995,15 +1995,22 @@ function createStudentStructure(name) {
 
 window.onload = function() {
 
-    document.getElementById('password-change-modal').style.display = 'none';
+    const modal = document.getElementById('password-change-modal');
+
+    if (modal) {
+        modal.style.display = 'none';
+    }
 
     if (!localStorage.getItem('system_fixed_v3')) {
         localStorage.removeItem('gp_v9_session');
         localStorage.setItem('system_fixed_v3', 'true');
     }
 
+    console.log("🚀 Inicializando sincronização realtime...");
+
     ativarSincronizacaoTempoReal();
 
+};
 
 
             // 1. CRIAMOS UMA FUNÇÃO INTERNA PARA GARANTIR QUE A TELA SEMPRE CARREGUE
@@ -7254,82 +7261,56 @@ function renderCalendarioAnual() {
 
 function ativarSincronizacaoTempoReal() {
 
-    // 🔵 LISTENER FIRESTORE (backup oficial)
+    console.log("🔄 Iniciando sincronização tempo real...");
 
-    if (!db) {
-        console.warn("⏳ Aguardando Firebase...");
-        setTimeout(ativarSincronizacaoTempoReal, 500);
-        return;
-    }
+    const iniciarListener = () => {
 
-    db.collection("portal_colegio_gp")
-    .doc("dados_gerais")
-    .onSnapshot(
-        { includeMetadataChanges: true },
-        (doc) => {
+        if (!window.config) {
+            console.log("⏳ aguardando config...");
+            setTimeout(iniciarListener, 300);
+            return;
+        }
 
-            if (!doc.exists) return;
+        if (!rtdb) {
+            console.log("⏳ aguardando Realtime Database...");
+            setTimeout(iniciarListener, 300);
+            return;
+        }
 
-            if (doc.metadata.fromCache) {
-                console.log("📦 Ignorando cache...");
+        console.log("✅ Realtime Database conectado!");
+
+        rtdb.ref("portal_colegio_gp/calendarEvents")
+        .on("value", (snapshot) => {
+
+            const dados = snapshot.val();
+
+            if (!dados || !dados.calendarEvents) {
+                console.log("⚠️ snapshot vazio");
                 return;
             }
 
-            const data = doc.data();
+            console.log("⚡ EVENTO RECEBIDO EM TEMPO REAL");
 
-            if (data && data.calendarEvents) {
+            config.calendarEvents = dados.calendarEvents;
 
-                console.log("⚡ Firestore sincronizado");
+            localStorage.setItem(
+                'calendarEvents',
+                JSON.stringify(dados.calendarEvents)
+            );
 
-                config.calendarEvents = data.calendarEvents;
-
-                localStorage.setItem(
-                    'calendarEvents',
-                    JSON.stringify(data.calendarEvents)
-                );
-
-                if (typeof renderCalendarioAnual === "function") {
-                    renderCalendarioAnual();
-                }
-
-                if (typeof renderEventTicker === "function") {
-                    renderEventTicker();
-                }
+            if (typeof renderCalendarioAnual === "function") {
+                renderCalendarioAnual();
             }
-        }
-    );
 
+            if (typeof renderEventTicker === "function") {
+                renderEventTicker();
+            }
 
-    // 🟢 LISTENER REALTIME DATABASE (sincronização instantânea entre navegadores)
+        });
 
-    if (!rtdb) return;
+    };
 
-    rtdb.ref("portal_colegio_gp/calendarEvents")
-    .on("value", (snapshot) => {
-
-        const dados = snapshot.val();
-
-        if (!dados || !dados.calendarEvents) return;
-
-        console.log("⚡ Realtime Database sincronizado");
-
-        config.calendarEvents = dados.calendarEvents;
-
-        localStorage.setItem(
-            'calendarEvents',
-            JSON.stringify(dados.calendarEvents)
-        );
-
-        if (typeof renderCalendarioAnual === "function") {
-            renderCalendarioAnual();
-        }
-
-        if (typeof renderEventTicker === "function") {
-            renderEventTicker();
-        }
-
-    });
-
+    iniciarListener();
 }
 
 
