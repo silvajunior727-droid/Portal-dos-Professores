@@ -6,6 +6,9 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>                 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
+<!-- 🔥 ADICIONADO: Realtime Database (necessário para sincronização instantânea) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyBEwojx6crH5h1hZN0FUcO2bmumzHdcdL8", 
@@ -17,8 +20,16 @@
     measurementId: "G-4V0DJHGXVG"
   };
 
-  firebase.initializeApp(firebaseConfig);  
-  const db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+
+// 🔵 Banco principal (Firestore)
+const db = firebase.firestore();
+
+// 🟢 Banco tempo real (Realtime Database)
+const rtdb = firebase.database();
+
+
+
 
 /* =================================================================================
    1️⃣ CONFIGURAÇÃO DA AGENDA (LIBERADA PARA TODOS OS DIAS - MODO FLEXÍVEL)
@@ -64,25 +75,30 @@ document.addEventListener('change', function(e) {
 });
 
 </script>
-   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Portal de Gestão - Colégio GP</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> 
-    
-<style>
-        /* ORDEM CORRETA: FONTES PRIMEIRO */
-// 1️⃣ ÍNDICE 1 (CSS)
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap'); 
 
-        /* --- CABEÇALHO QUE GRUDA NO CONTEÚDO (NÃO FICA SOZINHO) --- */
-        .header-blindado {
-            display: block;
-            width: 100%;
-            page-break-inside: avoid !important; 
-            break-inside: avoid !important;
-            page-break-after: avoid !important; 
-            break-after: avoid !important;
-        }       
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<title>Portal de Gestão - Colégio GP</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> 
+
+<style>
+
+/* ORDEM CORRETA: FONTES PRIMEIRO */
+/* 1️⃣ ÍNDICE 1 (CSS) */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap'); 
+
+/* --- CABEÇALHO QUE GRUDA NO CONTEÚDO (NÃO FICA SOZINHO) --- */
+.header-blindado {
+    display: block;
+    width: 100%;
+    page-break-inside: avoid !important; 
+    break-inside: avoid !important;
+    page-break-after: avoid !important; 
+    break-after: avoid !important;
+}
+      
 /* -----------------------------
    0) VARIÁVEIS GLOBAIS
 ------------------------------ */
@@ -1978,15 +1994,16 @@ function createStudentStructure(name) {
 
 
 window.onload = function() {
+
     document.getElementById('password-change-modal').style.display = 'none';
 
     if (!localStorage.getItem('system_fixed_v3')) {
-        localStorage.removeItem('gp_v9_session'); 
-        localStorage.setItem('system_fixed_v3', 'true'); 
+        localStorage.removeItem('gp_v9_session');
+        localStorage.setItem('system_fixed_v3', 'true');
     }
 
-    // 🚀 ATIVA SEM DELAY FIXO
     ativarSincronizacaoTempoReal();
+
 
 
             // 1. CRIAMOS UMA FUNÇÃO INTERNA PARA GARANTIR QUE A TELA SEMPRE CARREGUE
@@ -2069,25 +2086,40 @@ window.onload = function() {
 
 
 async function salvarEventosNoFirebase() {
+
     try {
-        if (!db) {
+
+        if (!db || !rtdb) {
             console.warn("Firebase não disponível");
             return;
         }
 
+        // 🔵 Backup permanente (Firestore)
         await db.collection("portal_colegio_gp")
         .doc("dados_gerais")
-        .update({
-            calendarEvents: config.calendarEvents
+        .set({
+            calendarEvents: config.calendarEvents,
+            lastUpdate: Date.now()
+        }, { merge: true });
+
+
+        // 🟢 Sincronização instantânea (Realtime Database)
+        await rtdb.ref("portal_colegio_gp/calendarEvents")
+        .set({
+            calendarEvents: config.calendarEvents,
+            lastUpdate: Date.now()
         });
 
-        console.log("☁️ Evento salvo instantaneamente no Firebase");
+
+        console.log("⚡ Atualização enviada (Firestore + Realtime)");
 
     } catch (error) {
-        console.error("Erro ao salvar eventos:", error);
-    }
-}
 
+        console.error("Erro ao salvar eventos:", error);
+
+    }
+
+}
 
 
 
@@ -7221,39 +7253,84 @@ function renderCalendarioAnual() {
 
 
 function ativarSincronizacaoTempoReal() {
+
+    // 🔵 LISTENER FIRESTORE (backup oficial)
+
     if (!db) {
-        console.warn("⏳ Firebase ainda não pronto... tentando novamente");
+        console.warn("⏳ Aguardando Firebase...");
         setTimeout(ativarSincronizacaoTempoReal, 500);
         return;
     }
 
-    console.log("🔥 Firebase conectado! Ativando tempo real...");
-
     db.collection("portal_colegio_gp")
     .doc("dados_gerais")
-    .onSnapshot((doc) => {
-        if (!doc.exists) return;
+    .onSnapshot(
+        { includeMetadataChanges: true },
+        (doc) => {
 
-        const data = doc.data();
+            if (!doc.exists) return;
 
-        if (data && data.calendarEvents) {
-            config.calendarEvents = data.calendarEvents;
-
-            localStorage.setItem('calendarEvents', JSON.stringify(data.calendarEvents));
-
-            if (typeof renderCalendarioAnual === "function") {
-                renderCalendarioAnual();
+            if (doc.metadata.fromCache) {
+                console.log("📦 Ignorando cache...");
+                return;
             }
 
-            if (typeof renderEventTicker === "function") {
-                renderEventTicker();
-            }
+            const data = doc.data();
 
-            console.log("⚡ ATUALIZOU EM TEMPO REAL!");
+            if (data && data.calendarEvents) {
+
+                console.log("⚡ Firestore sincronizado");
+
+                config.calendarEvents = data.calendarEvents;
+
+                localStorage.setItem(
+                    'calendarEvents',
+                    JSON.stringify(data.calendarEvents)
+                );
+
+                if (typeof renderCalendarioAnual === "function") {
+                    renderCalendarioAnual();
+                }
+
+                if (typeof renderEventTicker === "function") {
+                    renderEventTicker();
+                }
+            }
         }
-    });
-}
+    );
 
+
+    // 🟢 LISTENER REALTIME DATABASE (sincronização instantânea entre navegadores)
+
+    if (!rtdb) return;
+
+    rtdb.ref("portal_colegio_gp/calendarEvents")
+    .on("value", (snapshot) => {
+
+        const dados = snapshot.val();
+
+        if (!dados || !dados.calendarEvents) return;
+
+        console.log("⚡ Realtime Database sincronizado");
+
+        config.calendarEvents = dados.calendarEvents;
+
+        localStorage.setItem(
+            'calendarEvents',
+            JSON.stringify(dados.calendarEvents)
+        );
+
+        if (typeof renderCalendarioAnual === "function") {
+            renderCalendarioAnual();
+        }
+
+        if (typeof renderEventTicker === "function") {
+            renderEventTicker();
+        }
+
+    });
+
+}
 
 
 
@@ -7922,7 +7999,7 @@ async function addCalendarEvent(date, title, description) {
         : [];
 
     // 2. Evita duplicação exata (PROFISSIONAL)
-    const jaExiste = events.some(e => e.date === date && e.title === title);
+    const jaExiste = events.some(e => e.date === date && e.title === title);   
     if (jaExiste) {
         alert("⚠️ Já existe um evento com esse título nessa data.");
         return;
@@ -7940,24 +8017,24 @@ async function addCalendarEvent(date, title, description) {
     // 6. Atualiza cache local (backup)
     localStorage.setItem('calendarEvents', JSON.stringify(events));
 
-    // 🚀 7. SALVAMENTO PROFISSIONAL (TEMPO REAL)
-    await salvarEventosNoFirebase();
+  // 🚀 7. SALVAMENTO PROFISSIONAL (TEMPO REAL)
+await salvarEventosNoFirebase();
 
-    alert("✅ Evento salvo e sincronizado em tempo real!");
+alert("✅ Evento salvo e sincronizado em tempo real!");
 
-    // 8. Atualiza tela imediatamente
-    if (typeof renderCalendarioAnual === "function") {
-        renderCalendarioAnual();
-    }
+// 8. Atualiza tela imediatamente (mesma aba)
+if (typeof renderCalendarioAnual === "function") {
+    renderCalendarioAnual();
+}
 
-    if (typeof renderEventTicker === "function") {
-        renderEventTicker();
-    }
+if (typeof renderEventTicker === "function") {
+    renderEventTicker();
+}
 
-  } catch (error) {
+} catch (error) {
     console.error("Erro ao adicionar evento:", error);
     alert("❌ Erro ao salvar evento.");
-  }
+}
 }
 
 
@@ -8674,6 +8751,31 @@ function imprimirCalendario() {
     setTimeout(function () {
         window.print();
     }, 200);
+}
+
+
+
+async function loadEventos() {
+    try {
+        if (!db) return;
+
+        const doc = await db.collection("portal_colegio_gp")
+            .doc("dados_gerais")
+            .get();
+
+        if (doc.exists) {
+            const data = doc.data();
+
+            if (data && data.calendarEvents) {
+                config.calendarEvents = data.calendarEvents;
+
+                localStorage.setItem('calendarEvents', JSON.stringify(data.calendarEvents));
+            }
+        }
+
+    } catch (error) {
+        console.error("Erro ao carregar eventos:", error);
+    }
 }
 
 /* =================================================================================
