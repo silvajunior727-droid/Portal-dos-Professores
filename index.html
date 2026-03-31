@@ -2332,6 +2332,16 @@ window.TURMABTNSTYLE = {
 };
 
 function renderHome() {
+    // --- 🚨 A MARRETADA: FORÇA O SISTEMA A USAR AS TURMAS DO CÓDIGO (IGNORA O CACHE DO FIREBASE) ---
+    if (currentUser && typeof users !== 'undefined') {
+        const perfilCorreto = users[currentUser.email] || users[currentUser.id];
+        if (perfilCorreto) {
+            currentUser.classes = perfilCorreto.classes;
+            currentUser.displayName = perfilCorreto.displayName;
+            localStorage.setItem('gp_currentUser', JSON.stringify(currentUser));
+        }
+    }
+
     // --- 1. TRAVA DE SEGURANÇA INICIAL ---
     if (!currentUser) {
         console.warn("Usuário ainda não carregado.");
@@ -2422,7 +2432,7 @@ function renderHome() {
     const minhasTurmas = currentUser.classes;
     
     // DEBUG: Isso vai te mostrar no console o que tem dentro do perfil dela
-    console.log("Turmas da Thaina:", minhasTurmas);
+    console.log("Turmas detectadas para exibição:", minhasTurmas);
 
     const totalColunas = minhasTurmas.length;
 
@@ -2444,7 +2454,10 @@ function renderHome() {
           return `
             <button class="main-button class-button" 
                     style="height: 40px; width: 100%; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 4px 0px #4dd0e1 !important; border-radius: 6px !important; font-weight: bold !important; font-size: clamp(9px, 1vw, 12px) !important; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; white-space: nowrap; padding: 0 4px;" 
-                    onclick="openClass('${idTurma}')">
+                    onclick="openClass('${idTurma}')"
+                    onmousedown="this.style.boxShadow='0px 2px 0px #4dd0e1'; this.style.transform='translateY(2px)'"
+                    onmouseup="this.style.boxShadow='0px 4px 0px #4dd0e1'; this.style.transform='translateY(0)'"
+                    onmouseleave="this.style.boxShadow='0px 4px 0px #4dd0e1'; this.style.transform='translateY(0)'">
               ${label}
             </button>
           `;
@@ -2484,7 +2497,6 @@ setTimeout(() => {
 }, 100);
 
 }
-
 
 // --- FUNÇÃO PARA GERAR O PDF FINAL DO RELATÓRIO ---
 function gerarRelatorioPDF() {
@@ -10936,7 +10948,7 @@ function mostrarAvisoMegafone(mensagem, infoProf) {
         caixa.style.animation = "subirAviso 0.5s ease-in forwards";
         setTimeout(() => { caixa.remove(); }, 480);
 
-        const emailFinal = infoProf.email || infoProf.userEmail || "anonimo";
+        const emailFinal = infoProf.email || infoProf.userEmail || "anonimo"; 
         localStorage.setItem('avisoMegafoneLido_' + emailFinal, mensagem);
 
         db.collection('historico_avisos').add({
