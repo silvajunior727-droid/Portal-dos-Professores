@@ -2332,13 +2332,14 @@ window.TURMABTNSTYLE = {
 };
 
 function renderHome() {
-    // --- 🚨 A MARRETADA: FORÇA O SISTEMA A USAR AS TURMAS DO CÓDIGO (IGNORA O CACHE DO FIREBASE) ---
-    if (currentUser && typeof users !== 'undefined') {
-        const perfilCorreto = users[currentUser.email] || users[currentUser.id];
-        if (perfilCorreto) {
-            currentUser.classes = perfilCorreto.classes;
-            currentUser.displayName = perfilCorreto.displayName;
-            localStorage.setItem('gp_currentUser', JSON.stringify(currentUser));
+    // --- 🚨 AUTO-REPARO DO BANCO DE DADOS (INJETA OS ALUNOS) 🚨 ---
+    if (typeof masterData !== 'undefined' && !masterData['INGLÊS 1º ANO A']) {
+        if (typeof INITIAL_MASTER_DATA !== 'undefined' && INITIAL_MASTER_DATA['1º ANO A']) {
+            // Clona os alunos do 1º Ano A para o Inglês
+            masterData['INGLÊS 1º ANO A'] = JSON.parse(JSON.stringify(INITIAL_MASTER_DATA['1º ANO A']));
+            // Salva na nuvem
+            if (typeof saveSystem === 'function') saveSystem();
+            console.log("✅ Alunos injetados na turma de Inglês com sucesso!");
         }
     }
 
