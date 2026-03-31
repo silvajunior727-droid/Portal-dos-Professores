@@ -7,7 +7,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
 <!-- 🔥 ADICIONADO: Realtime Database (necessário para sincronização instantânea) -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script> 
 
 <script>
   const firebaseConfig = {
@@ -175,7 +175,7 @@ document.addEventListener('change', function(e) {
 }
 
 .logo-gp {
-    max-height: 70px;   /* ajuste o tamanho do logo aqui */
+    max-height: 70px;   /* ajuste o tamanho do logo aqui */ 
 }
 
 .header-text h1 {
@@ -1799,13 +1799,20 @@ let mediaConfig = {
 
 let users = {
     'junior@gp': { password: '123', role: 'Língua Inglesa', classes: CLASSES_ALL, displayName: 'Júnior - Língua Inglesa' },
-    'thaina@gp': { password: '123', role: 'Professora', classes: ['Inglês 1º Ano B'], displayName: 'Thaina - INGLÊS 1º ANO B' }, // Adicionada!
+    
+    // THAINA: 5º Ano A (Regente) + Inglês 1º Ano A (Especialista)
+    'thaina@gp': { 
+        password: '123', 
+        role: 'Professora', 
+        classes: ['5º ANO A', 'INGLÊS 1º ANO A'], 
+        displayName: 'Thaina - 5º Ano A e Inglês' 
+    },
+
     'rodrigo@gp': { password: '123', role: 'Educação Física', classes: CLASSES_ALL, displayName: 'Rodrigo - Educação Física' },
     'beatriz@gp': { password: '123', role: 'Professora', classes: ['2º ANO A'], displayName: 'Beatriz - 2º Ano A' },
-    'thaina@gp': { password: '123', role: 'Professora', classes: ['5º ANO A'], displayName: 'Thaina - 5º Ano A' },
     'kelly@gp': { password: '123', role: 'Professora', classes: ['1º ANO A'], displayName: 'Kelly - 1º Ano A' },
     'lorena@gp': { password: '123', role: 'Professora', classes: ['3º ANO A'], displayName: 'Lorena - 3º Ano A' },
-    'adriana@gp': { password: '123', role: 'Professora', classes: ['4º ANO A'], displayName: 'Adriana - 4º Ano A' }, // Adicionei a Adriana aqui também para garantir
+    'adriana@gp': { password: '123', role: 'Professora', classes: ['4º ANO A'], displayName: 'Adriana - 4º Ano A' }, 
     'veronica@gp': { password: '123', role: 'Professora', classes: ['4º ANO B'], displayName: 'Veronica - 4º Ano B' },
     'aline@gp': { password: '123', role: 'Professora', classes: ['1º ANO B'], displayName: 'Aline - 1º Ano B' },
     'andressa@gp': { password: '123', role: 'Coordenadora', classes: CLASSES_ALL, displayName: 'Andressa - Coordenadora' }, 
@@ -1968,51 +1975,91 @@ function createStudentStructure(name) {
 
 // 4️⃣ ÍNDICE 4 (Banco de Dados)
 
-        const INITIAL_MASTER_DATA = {
-            '1º ANO A': [
-                createStudentStructure('BERNARDO CAMPOS LIMA'), createStudentStructure('DAVI SILVA OLIVEIRA VIANA'), 
-		createStudentStructure('HELENA LIMA DE PAIVA'), createStudentStructure('HELOISA MENDES MANTOVANI'), 
-		createStudentStructure('ISABELLA FERNANDES SANTOS RIOS'), createStudentStructure('JOANA FERREIRA DE OLIVEIRA'), 
-		createStudentStructure('LAVINIA CINOBILINO'), createStudentStructure('SOFIA GUEDES COSTA CORREIA') 
- 
+const INITIAL_MASTER_DATA = {
+    '1º ANO A': [
+        createStudentStructure('BERNARDO CAMPOS LIMA'), 
+        createStudentStructure('DAVI SILVA OLIVEIRA VIANA'), 
+        createStudentStructure('HELENA LIMA DE PAIVA'), 
+        createStudentStructure('HELOISA MENDES MANTOVANI'), 
+        createStudentStructure('ISABELLA FERNANDES SANTOS RIOS'), 
+        createStudentStructure('JOANA FERREIRA DE OLIVEIRA'), 
+        createStudentStructure('LAVINIA CINOBILINO'), 
+        createStudentStructure('SOFIA GUEDES COSTA CORREIA') 
+    ],
 
-            ],
-	    '1º ANO B': [
-                createStudentStructure('ANNA JÚLIA SALOMÃO DOURADO'), createStudentStructure('GAEL DA SILVA MOTA SANTOS'), 
-                createStudentStructure('HADASSAH MROTZEK SANTOS'), createStudentStructure('HELENA LUZ ROSA'), 
-                createStudentStructure('ISRAEL CRUZ PIOLI'), createStudentStructure('JOAQUIM NOAH CIRINO VIEIRA'), 
-                createStudentStructure('LUCCA MIGUEL SOUZA DE OLIVEIRA'), createStudentStructure('MARIA VITÓRIA RAMALHO PEREIRA'),
-		createStudentStructure('NAYA MARIA MELO ROCHA'), createStudentStructure('VALENTIM FERMINO LOPES')
-            ],
-            '2º ANO A': [
-                createStudentStructure('ANA CLARA ALVES MAIA'), createStudentStructure('ANNE ARAÚJO SOARES'), 
-                createStudentStructure('BERNARDO ALVES FARIA'), createStudentStructure('BERNARDO CONCEIÇÃO DOS SANTOS'), 
-                createStudentStructure('GHAEL DE SALES'), createStudentStructure('HELENA ESTHER CASTRO NEVES'), 
-                createStudentStructure('MATHEUS BISPO DA SILVA')
-            ],
-            '3º ANO A': [
-                createStudentStructure('ALICE DE LIMA VITAL'), createStudentStructure('ANA TEREZA NASCIMENTO DA SILVA'), 
-                createStudentStructure('APOLO AMÉRICO TAVARES COSTA'), createStudentStructure('BENÍCIO SOUSA SANTIAGO'), 
-       createStudentStructure('CHRISTIAN JHONATAN SOUZA DANTAS'), createStudentStructure('GIULIA GOMES AGLIO'), 
-       createStudentStructure('ISABELLA RODRIGUES ALEXANDRE'), createStudentStructure('LUCAS SANTOS SERRA'), 
-       createStudentStructure('MARCO ANTÔNIO MENDONÇA CAMACHO'), createStudentStructure('MIGUEL ALVES RIBEIRO'), 
-                createStudentStructure('RODRIGO ALVES NASCIMENTO')
-            ],
-            '4º ANO A': [
-                createStudentStructure('DEIVID GUIMARÃES RODRIGUES'), createStudentStructure('LIZZY ROCHA DE OLIVEIRA'), 
-                createStudentStructure('LORENA DONNARUMMA BENTUBO LOPES'), createStudentStructure('MIGUEL DA SILVA COSTA'), 
-                createStudentStructure('NICOLLY FERNANDES DA SILVA LIMA'), createStudentStructure('SAMUEL OLIVEIRA MACHADO') 
-            ],
-            '4º ANO B': [
-                createStudentStructure('ANTONY DOURADO DE SOUZA'), createStudentStructure('KAUÊ XAVIER DE MOURA'), 
-                createStudentStructure('LORENZO DEGAN DE ANDRADE'), createStudentStructure('LUAN RIBEIRO ROCHA'), 
-                createStudentStructure('PEDRO SANTAROSA BEZERRA') 
-            ],
-            '5º ANO A': [
-                createStudentStructure('ANNE MARCELLY SILVA NUNES'), createStudentStructure('LETICIA VALADARES DOMENICALI NETO'), 
-                createStudentStructure('PEDRO BEZERRA REGES'), createStudentStructure('PEDRO HENRIQUE OLIVEIRA COIMBRA') 
-            ]
-        };
+    // Mesma lista de alunos para o Inglês da Thaina
+    'INGLÊS 1º ANO A': [
+        createStudentStructure('BERNARDO CAMPOS LIMA'), 
+        createStudentStructure('DAVI SILVA OLIVEIRA VIANA'), 
+        createStudentStructure('HELENA LIMA DE PAIVA'), 
+        createStudentStructure('HELOISA MENDES MANTOVANI'), 
+        createStudentStructure('ISABELLA FERNANDES SANTOS RIOS'), 
+        createStudentStructure('JOANA FERREIRA DE OLIVEIRA'), 
+        createStudentStructure('LAVINIA CINOBILINO'), 
+        createStudentStructure('SOFIA GUEDES COSTA CORREIA') 
+    ],
+
+    '1º ANO B': [
+        createStudentStructure('ANNA JÚLIA SALOMÃO DOURADO'), 
+        createStudentStructure('GAEL DA SILVA MOTA SANTOS'), 
+        createStudentStructure('HADASSAH MROTZEK SANTOS'), 
+        createStudentStructure('HELENA LUZ ROSA'), 
+        createStudentStructure('ISRAEL CRUZ PIOLI'), 
+        createStudentStructure('JOAQUIM NOAH CIRINO VIEIRA'), 
+        createStudentStructure('LUCCA MIGUEL SOUZA DE OLIVEIRA'), 
+        createStudentStructure('MARIA VITÓRIA RAMALHO PEREIRA'),
+        createStudentStructure('NAYA MARIA MELO ROCHA'), 
+        createStudentStructure('VALENTIM FERMINO LOPES')
+    ],
+
+    '2º ANO A': [
+        createStudentStructure('ANA CLARA ALVES MAIA'), 
+        createStudentStructure('ANNE ARAÚJO SOARES'), 
+        createStudentStructure('BERNARDO ALVES FARIA'), 
+        createStudentStructure('BERNARDO CONCEIÇÃO DOS SANTOS'), 
+        createStudentStructure('GHAEL DE SALES'), 
+        createStudentStructure('HELENA ESTHER CASTRO NEVES'), 
+        createStudentStructure('MATHEUS BISPO DA SILVA')
+    ],
+
+    '3º ANO A': [
+        createStudentStructure('ALICE DE LIMA VITAL'), 
+        createStudentStructure('ANA TEREZA NASCIMENTO DA SILVA'), 
+        createStudentStructure('APOLO AMÉRICO TAVARES COSTA'), 
+        createStudentStructure('BENÍCIO SOUSA SANTIAGO'), 
+        createStudentStructure('CHRISTIAN JHONATAN SOUZA DANTAS'), 
+        createStudentStructure('GIULIA GOMES AGLIO'), 
+        createStudentStructure('ISABELLA RODRIGUES ALEXANDRE'), 
+        createStudentStructure('LUCAS SANTOS SERRA'), 
+        createStudentStructure('MARCO ANTÔNIO MENDONÇA CAMACHO'), 
+        createStudentStructure('MIGUEL ALVES RIBEIRO'), 
+        createStudentStructure('RODRIGO ALVES NASCIMENTO')
+    ],
+
+    '4º ANO A': [
+        createStudentStructure('DEIVID GUIMARÃES RODRIGUES'), 
+        createStudentStructure('LIZZY ROCHA DE OLIVEIRA'), 
+        createStudentStructure('LORENA DONNARUMMA BENTUBO LOPES'), 
+        createStudentStructure('MIGUEL DA SILVA COSTA'), 
+        createStudentStructure('NICOLLY FERNANDES DA SILVA LIMA'), 
+        createStudentStructure('SAMUEL OLIVEIRA MACHADO') 
+    ],
+
+    '4º ANO B': [
+        createStudentStructure('ANTONY DOURADO DE SOUZA'), 
+        createStudentStructure('KAUÊ XAVIER DE MOURA'), 
+        createStudentStructure('LORENZO DEGAN DE ANDRADE'), 
+        createStudentStructure('LUAN RIBEIRO ROCHA'), 
+        createStudentStructure('PEDRO SANTAROSA BEZERRA') 
+    ],
+
+    '5º ANO A': [
+        createStudentStructure('ANNE MARCELLY SILVA NUNES'), 
+        createStudentStructure('LETICIA VALADARES DOMENICALI NETO'), 
+        createStudentStructure('PEDRO BEZERRA REGES'), 
+        createStudentStructure('PEDRO HENRIQUE OLIVEIRA COIMBRA') 
+    ]
+};
 
 
 window.onload = function() {
@@ -2285,6 +2332,12 @@ window.TURMABTNSTYLE = {
 };
 
 function renderHome() {
+    // --- 1. TRAVA DE SEGURANÇA INICIAL ---
+    if (!currentUser) {
+        console.warn("Usuário ainda não carregado.");
+        return;
+    }
+
     hideScreens();
     const s = document.getElementById('home-screen');
     s.classList.add('active');
@@ -2317,7 +2370,7 @@ function renderHome() {
                 <div class="header-left">
                     <img src="LOGO GP.png" alt="Logo" class="logo-gp">
                     <div class="header-text">
-                        <h1>Olá, ${currentUser.displayName.split(' - ')[0]} !</h1>
+                       <h1>Olá, ${ (currentUser && currentUser.displayName) ? currentUser.displayName.split(' - ')[0] : 'Usuário' } !</h1>
                         <small>${currentUser.role}</small>
                     </div>
                 </div>
@@ -2361,12 +2414,16 @@ function renderHome() {
                     ` : ''}
                 </div>
 
-                <div id="grid-turmas-container" style="margin-bottom: 20px;">
+<div id="grid-turmas-container" style="margin-bottom: 20px;">
   ${(() => {
+    // Proteção extra
     if (!currentUser || !currentUser.classes) return '<p>Carregando turmas...</p>';
     
-    // Pegamos exatamente o que está no perfil do professor
     const minhasTurmas = currentUser.classes;
+    
+    // DEBUG: Isso vai te mostrar no console o que tem dentro do perfil dela
+    console.log("Turmas da Thaina:", minhasTurmas);
+
     const totalColunas = minhasTurmas.length;
 
     return `
@@ -2378,16 +2435,16 @@ function renderHome() {
           padding-bottom: 10px;
       ">
         ${minhasTurmas.map(idTurma => {
-          // Simplifica apenas o texto do botão
-          let label = idTurma === "Inglês 1º Ano B" ? "ING. 1º B" : idTurma;
+          const idUpper = idTurma.toUpperCase();
+          let label = idTurma; 
+          
+          if (idUpper === "INGLÊS 1º ANO A") label = "ING. 1º A";
+          if (idUpper === "INGLÊS 1º ANO B") label = "ING. 1º B";
           
           return `
             <button class="main-button class-button" 
                     style="height: 40px; width: 100%; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 4px 0px #4dd0e1 !important; border-radius: 6px !important; font-weight: bold !important; font-size: clamp(9px, 1vw, 12px) !important; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; white-space: nowrap; padding: 0 4px;" 
-                    onclick="openClass('${idTurma}')"
-                    onmousedown="this.style.boxShadow='0px 2px 0px #4dd0e1'; this.style.transform='translateY(2px)'"
-                    onmouseup="this.style.boxShadow='0px 4px 0px #4dd0e1'; this.style.transform='translateY(0)'"
-                    onmouseleave="this.style.boxShadow='0px 4px 0px #4dd0e1'; this.style.transform='translateY(0)'">
+                    onclick="openClass('${idTurma}')">
               ${label}
             </button>
           `;
@@ -3446,30 +3503,99 @@ if (['Júnior', 'Sheila', 'Andressa'].some(name => currentUser.displayName && cu
     const currentYear = new Date().getFullYear();
     const attendanceHTML = `
         <div style="margin-bottom: 20px;">
+            
             <div class="config-toggle-header" onclick="toggleConfig('attendance-content')" 
-                 style="background-color: #e0f2f1; color: #00695c; border: 1px solid #80cbc4; box-shadow: 0px 4px 0px #4db6ac; border-radius: 8px; padding: 12px 15px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; transition: all 0.1s;"
+                 style="background-color: #e0f2f1; /* Verde-água bem clarinho */
+                        color: #00695c; /* Verde escuro */
+                        border: 1px solid #80cbc4; /* Borda média */
+                        box-shadow: 0px 4px 0px #4db6ac; /* Sombra 3D marcante */
+                        border-radius: 8px;
+                        padding: 12px 15px; 
+                        cursor: pointer; 
+                        font-weight: bold;
+                        display: flex; justify-content: space-between; align-items: center; 
+                        transition: all 0.1s;"
                  onmousedown="this.style.boxShadow='0px 2px 0px #4db6ac'; this.style.transform='translateY(2px)'"
                  onmouseup="this.style.boxShadow='0px 4px 0px #4db6ac'; this.style.transform='translateY(0)'"
                  onmouseleave="this.style.boxShadow='0px 4px 0px #4db6ac'; this.style.transform='translateY(0)'">
+                 
                  <span style="display:flex; align-items:center; gap:8px;">📋 Diário de Presença (Chamada)</span>
                  <span>▼</span>
             </div>
+
             <div id="attendance-content" class="config-toggle-content"
-                 style="padding: 20px; border-left: 1px solid #e0f2f1; border-right: 1px solid #e0f2f1; border-bottom: 1px solid #e0f2f1; border-radius: 0 0 8px 8px; margin-top: 5px; background: #fff;">
-                <h3 style="margin-top: 0; color: #555; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">Gerar Planilha</h3>
+                 style="padding: 20px; 
+                        border-left: 1px solid #e0f2f1; 
+                        border-right: 1px solid #e0f2f1; 
+                        border-bottom: 1px solid #e0f2f1; 
+                        border-radius: 0 0 8px 8px; 
+                        margin-top: 5px; 
+                        background: #fff;">
+
+              <h3 style="margin-top: 0; color: #555; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                    Gerar Planilha
+                </h3>
+
                 <div style="margin-bottom:15px; background:#fafafa; padding:15px; border-radius:8px; border:1px solid #eee;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                         <label style="color:#444;"><b>1. Selecione as Turmas:</b></label>
-                        <button class="main-button" style="width:130px; height:35px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 3px 0px #80deea !important; border-radius: 6px !important; cursor: pointer; font-weight: bold;" onclick="toggleAllClasses()">☑️ Todas</button>
+                        
+                        <button class="main-button"
+                                style="width:130px; height:35px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 3px 0px #80deea !important; border-radius: 6px !important; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s;"
+                                onclick="toggleAllClasses()"
+                                onmousedown="this.style.boxShadow='0px 1px 0px #80deea'; this.style.transform='translateY(2px)'"
+                                onmouseup="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'"
+                                onmouseleave="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'">
+                            ☑️ Todas
+                        </button>
                     </div>
                     <div style="max-height:150px; overflow-y:auto; display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;">
                         ${['1º ANO A', '1º ANO B', 'INGLÊS 1º ANO B', '2º ANO A', '3º ANO A', '4º ANO A', '4º ANO B', '5º ANO A'].map((c, i) => `<div style="display:flex; align-items:center;"><input type="checkbox" id="att-cls-${i}" class="att-class-chk" value="${c}" style="width:auto; margin-right:5px;"><label for="att-cls-${i}" style="font-size:0.8em; margin:0; cursor:pointer; color:#333;">${c}</label></div>`).join('')}
                     </div>
                 </div>
-                <button class="main-button" style="width:100%; height:45px; margin-top:20px; background-color: #e8f5e9 !important; color: #1b5e20 !important; border: 1px solid #a5d6a7 !important; box-shadow: 0px 4px 0px #66bb6a !important; border-radius: 6px !important; font-weight: bold; display: flex; align-items: center; justify-content: center;" onclick="generateAttendanceSheet()">📄 Gerar Diários</button>
+
+                <div style="margin-bottom:15px;">
+                    <label style="color:#444;"><b>2. Ano:</b></label>
+                    <input type="number" id="att-year" class="input-admin" value="${currentYear}" style="margin-left:10px; padding:5px; border-radius:4px; border:1px solid #ccc;">
+                </div>
+
+                <div class="form-group" style="background:#fafafa; padding:15px; border-radius:8px; border:1px solid #eee;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <label style="color:#444;"><b>3. Meses:</b></label>
+                        
+                        <button class="main-button"
+                                style="width:130px; height:35px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 3px 0px #80deea !important; border-radius: 6px !important; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s;"
+                                onclick="toggleAllMonths()"
+                                onmousedown="this.style.boxShadow='0px 1px 0px #80deea'; this.style.transform='translateY(2px)'"
+                                onmouseup="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'"
+                                onmouseleave="this.style.boxShadow='0px 3px 0px #80deea'; this.style.transform='translateY(0)'">
+                            ☑️ Todos
+                        </button>
+                    </div>
+                    <div style="grid-template-columns: repeat(4, 1fr); gap:8px; display:grid;">
+                        ${['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'].map((m, i) => `<div style="display:flex; align-items:center; background:#fff; padding:5px; border:1px solid #ddd; border-radius:5px;"><input type="checkbox" id="att-m-${i+1}" class="att-month-chk" value="${i+1}" style="width:auto; margin-right:5px;"><label for="att-m-${i+1}" style="font-size:0.8em; margin:0; cursor:pointer; color:#333;">${m.substring(0,3)}</label></div>`).join('')}
+                    </div>
+                </div>
+
+                <button class="main-button" 
+                        style="width:100%; height:45px; margin-top:20px; 
+                               background-color: #e8f5e9 !important; 
+                               color: #1b5e20 !important; 
+                               border: 1px solid #a5d6a7 !important; 
+                               box-shadow: 0px 4px 0px #66bb6a !important; 
+                               border-radius: 6px !important; 
+                               cursor: pointer; 
+                               font-weight: bold; 
+                               display: flex; align-items: center; justify-content: center; gap: 8px; 
+                               transition: 0.1s;" 
+                        onclick="generateAttendanceSheet()"
+                        onmousedown="this.style.boxShadow='0px 2px 0px #66bb6a'; this.style.transform='translateY(2px)'"
+                        onmouseup="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'"
+                        onmouseleave="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'">
+                    📄 Gerar Diários
+                </button>
             </div>
         </div>`;
-
     // --- 7. MONTAGEM FINAL DA TELA ---
     // Note que não há chave extra aqui no final!
     s.innerHTML = `
@@ -4247,74 +4373,77 @@ function printBoletimFinal() {
     win.document.close();
     setTimeout(() => { win.print(); }, 500);
 }
-        function generateAttendanceSheet() {
-            const year = document.getElementById('att-year').value;
-            const selectedClasses = Array.from(document.querySelectorAll('.att-class-chk:checked')).map(c => c.value);
-            const selectedMonths = Array.from(document.querySelectorAll('.att-month-chk:checked')).map(c => parseInt(c.value));
+       function generateAttendanceSheet() {
+    const year = document.getElementById('att-year').value;
+    const selectedClasses = Array.from(document.querySelectorAll('.att-class-chk:checked')).map(c => c.value);
+    const selectedMonths = Array.from(document.querySelectorAll('.att-month-chk:checked')).map(c => parseInt(c.value));
+    
+    if(selectedClasses.length === 0) return alert('Selecione pelo menos uma turma.');
+    if(selectedMonths.length === 0) return alert('Selecione pelo menos um mês.');
+
+    let fullHtml = '';
+    const monthNames = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+
+    selectedClasses.forEach(cls => {
+        if(!masterData[cls] || masterData[cls].length === 0) return;
+        selectedMonths.forEach(monthIndex => {
+            const daysInMonth = new Date(year, monthIndex, 0).getDate();
+            const monthName = monthNames[monthIndex - 1];
+
+            let tableHtml = `<div style="padding:20px; font-family:'Arial', sans-serif; page-break-inside: avoid; margin-bottom: 40px; border-bottom: 2px dashed #ccc;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:10px;">
+                    <div><img src="LOGO GP.png" style="height:50px;"></div>
+                    <div style="text-align:right;">
+                        <h2 style="margin:0;">DIÁRIO DE PRESENÇA</h2>
+                        <p style="margin:0;">${cls} - ${monthName}/${year}</p>
+                    </div>
+                </div>
+                <table border="1" cellspacing="0" width="100%" style="border-collapse:collapse; font-size:0.8em; text-align:center;">
+                    <thead><tr style="background:#eee;"><th style="width:20px;">Nº</th><th style="text-align:left; padding-left:5px;">NOME DO ALUNO</th>`;
             
-            if(selectedClasses.length === 0) return alert('Selecione pelo menos uma turma.');
-            if(selectedMonths.length === 0) return alert('Selecione pelo menos um mês.');
+            for(let d=1; d<=daysInMonth; d++) {
+                tableHtml += `<th style="width:20px;">${d}</th>`;
+            }
+            
+            tableHtml += `<th style="width:40px;">TOTAL</th></tr></thead><tbody>`;
 
-            let fullHtml = '';
-            const monthNames = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-
-            selectedClasses.forEach(cls => {
-                if(!masterData[cls] || masterData[cls].length === 0) return;
-                selectedMonths.forEach(monthIndex => {
-                    const daysInMonth = new Date(year, monthIndex, 0).getDate();
-                    const monthName = monthNames[monthIndex - 1];
-
-                    let tableHtml = `<div style="padding:20px; font-family:'Arial', sans-serif; page-break-inside: avoid; margin-bottom: 40px; border-bottom: 2px dashed #ccc;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:10px;">
-                            <div><img src="LOGO GP.png" style="height:50px;"></div>
-                            <div style="text-align:right;">
-                                <h2 style="margin:0;">DIÁRIO DE PRESENÇA</h2>
-                                <p style="margin:0;">${cls} - ${monthName}/${year}</p>
-                            </div>
-                        </div>
-                        <table border="1" cellspacing="0" width="100%" style="border-collapse:collapse; font-size:0.8em; text-align:center;">
-                            <thead><tr style="background:#eee;"><th style="width:20px;">Nº</th><th style="text-align:left; padding-left:5px;">NOME DO ALUNO</th>`;
-                    
-                    for(let d=1; d<=daysInMonth; d++) tableHtml += `<th style="width:20px;">${d}</th>`;
-                    tableHtml += `<th style="width:40px;">TOTAL</th></tr></thead><tbody>`;
-
-                    masterData[cls].forEach((std, idx) => {
-                        tableHtml += `<tr><td>${idx+1}</td><td style="text-align:left; padding-left:5px; white-space:nowrap;">${std.name}</td>`;
-                        let totalF = 0;
-                        for(let d=1; d<=daysInMonth; d++) {
-                            const dateKey = `${year}-${String(monthIndex).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                            let symbol = '';
-                            if(std.diary && std.diary[dateKey]) {
-                                const entry = std.diary[dateKey];
-                                if(entry.faltas === 0) {
-                                    symbol = '<span style="color: #28a745; font-weight: bold;">P</span>';
-                                } else {
-                                    totalF++;
-                                    if(entry.just && entry.just.trim() !== "") {
-                                        symbol = '<span style="color: #FF8C00; font-weight: bold;">FJ</span>';
-                                    } else {
-                                        symbol = '<span style="color: #dc3545; font-weight: bold;">F</span>';
-                                    }
-                                }
+            masterData[cls].forEach((std, idx) => {
+                tableHtml += `<tr><td>${idx+1}</td><td style="text-align:left; padding-left:5px; white-space:nowrap;">${std.name}</td>`;
+                let totalF = 0;
+                for(let d=1; d<=daysInMonth; d++) {
+                    const dateKey = `${year}-${String(monthIndex).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    let symbol = '';
+                    if(std.diary && std.diary[dateKey]) {
+                        const entry = std.diary[dateKey];
+                        if(entry.faltas === 0) {
+                            symbol = '<span style="color: #28a745; font-weight: bold;">P</span>';
+                        } else {
+                            totalF++;
+                            if(entry.just && entry.just.trim() !== "") {
+                                symbol = '<span style="color: #FF8C00; font-weight: bold;">FJ</span>';
+                            } else {
+                                symbol = '<span style="color: #dc3545; font-weight: bold;">F</span>';
                             }
-                            tableHtml += `<td>${symbol}</td>`;
                         }
-                        tableHtml += `<td style="font-weight:bold;">${totalF || ''}</td></tr>`;
-                    });
-                    tableHtml += `</tbody></table>
-                    <div style="margin-top:20px; font-size:0.8em;">
-                        Legenda: <b style="color:#28a745">P</b> (Presente) | <b style="color:#dc3545">F</b> (Falta) | <b style="color:#FF8C00">FJ</b> (Justificada/Atestado)
-                    </div></div>`;
-                    fullHtml += tableHtml;
-                });
+                    }
+                    tableHtml += `<td>${symbol}</td>`;
+                }
+                tableHtml += `<td style="font-weight:bold;">${totalF || ''}</td></tr>`;
             });
+            
+            tableHtml += `</tbody></table>
+            <div style="margin-top:20px; font-size:0.8em;">
+                Legenda: <b style="color:#28a745">P</b> (Presente) | <b style="color:#dc3545">F</b> (Falta) | <b style="color:#FF8C00">FJ</b> (Justificada/Atestado)
+            </div></div>`;
+            
+            fullHtml += tableHtml;
+        });
+    });
+
     const modal = document.getElementById('print-modal');
-        
-        // AQUI ESTÁ A MÁGICA:
-        // 1. Adicionei 'display:flex; justify-content:center; gap:15px' na div dos botões para centralizar e separar.
-        // 2. Adicionei 'style="width:150px;"' em cada botão para eles terem o tamanho igual e manual.
-        
-       modal.innerHTML = `
+    
+    // As crases abaixo garantem que o ${fullHtml} seja interpretado como código e não como texto puro
+    modal.innerHTML = `
     <div class="modal-content" style="width:95%; height:90vh; display:flex; flex-direction:column;">
         <div id="att-area" style="flex:1; overflow:auto; background:white;">${fullHtml}</div>
         
@@ -4934,7 +5063,7 @@ function addRoteiroItem() {
             const selectMat = div.querySelector('.item-materia');
             if (currentUser) {
                 if (currentUser.displayName.includes('Júnior') || currentUser.role.includes('Inglês')) selectMat.value = 'INGLÊS';
-                else if (currentUser.displayName.includes('Tatiane') || currentUser.role.includes('Física')) selectMat.value = 'ED. FÍSICA';
+                else if (currentUser.displayName.includes('Rodrigo') || currentUser.role.includes('Física')) selectMat.value = 'ED. FÍSICA';
             }
         }
 
@@ -7829,20 +7958,47 @@ function saveGradeItem() {
     return; 
   }
 
+  // --- 1. MAPEAMENTO DE PROFESSORES ESPECIALISTAS (Por Matéria específica) ---
+  const mapaEspecialistas = {
+    "INGLÊS": "Prof. Júnior",
+    "INGLÊS 1º ANO A": "Prof(a). Thaina", // Ajustado: Thaina no 1º A
+    "INGLÊS 1º ANO B": "Prof. Júnior",   // Ajustado: Júnior no 1º B
+    "ED. FÍSICA": "Prof. Rodrigo"
+  };
+
+  // --- 2. MAPEAMENTO DE PROFESSORES REGENTES (Por Turma) ---
+  const mapaTurmas = {
+    "1º ANO A": "Prof(a). Kelly",
+    "1º ANO B": "Prof(a). Aline",
+    "2º ANO A": "Prof(a). Beatriz",
+    "3º ANO A": "Prof(a). Lorena",
+    "4º ANO A": "Prof(a). Adriana",
+    "4º ANO B": "Prof(a). Veronica",
+    "5º ANO A": "Prof(a). Thaina" // Thaina regente do 5º A
+  };
+
+  // --- 3. LÓGICA DE DEFINIÇÃO DO PROFESSOR ---
+  // A regra busca primeiro na lista de especialistas pela MATÉRIA.
+  // Se não encontrar, busca na lista de regentes pela TURMA.
+  // Se ainda assim não encontrar nada, usa o nome de quem está logado.
+  const nomeProfessor = mapaEspecialistas[materia] || mapaTurmas[turma] || currentUser.displayName;
+
   const newItem = {
     id: Date.now().toString(),
-    prof: currentUser.displayName,
-    profEmail: currentUser.email,
+    prof: nomeProfessor, 
+    profEmail: currentUser.email, 
     turma,
     materia,
     dia,
     hora
   };
 
+  if (!config.grade) config.grade = [];
   config.grade.push(newItem);
+  
   saveSystem();
 
-  alert('Horário salvo!');
+  alert(`Horário salvo para ${nomeProfessor}!`);
   renderConfig();
 
   setTimeout(() => {
@@ -7991,6 +8147,48 @@ if (!localStorage.getItem('calendarEvents')) {
 async function addCalendarEvent(date, title, description) { 
   try {
 
+    // --- 🚨 NOVA TRAVA: BLOQUEIO COM PERMISSÃO DE ACESSO BLINDADA ---
+    let dataBloqueada = false;
+    
+    // 1. Verifica se a data está nas exceções da nuvem
+    if (typeof config !== 'undefined' && config.exceptions && config.exceptions[date]) {
+        // Se a data está nas exceções e NÃO está marcada explicitamente como letiva (false), ela é bloqueada.
+        // Isso cobre casos onde o Firebase salva como texto "true" ou undefined.
+        if (config.exceptions[date].blocked !== false && config.exceptions[date].blocked !== "false") {
+            dataBloqueada = true;
+        }
+    } 
+    // 2. Verifica pela função nativa se é fim de semana ou dia sem aula
+    else if (typeof isClassDateBlocked === "function" && isClassDateBlocked(date)) {
+        dataBloqueada = true;
+    }
+
+    if (dataBloqueada) {
+        // Coleta os dados de quem está logado (Firebase + LocalStorage)
+        let dadosUsuario = "";
+        if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
+            dadosUsuario += (firebase.auth().currentUser.displayName || "") + " ";
+            dadosUsuario += (firebase.auth().currentUser.email || "") + " ";
+        }
+        // Tenta pegar também caso você salve o nome no navegador
+        dadosUsuario += (localStorage.getItem('userName') || localStorage.getItem('usuarioLogado') || localStorage.getItem('nomeUsuario') || "");
+        
+        dadosUsuario = dadosUsuario.toLowerCase();
+        
+        // Regra de privilégio EXCLUSIVA para a gestão
+        const temPermissaoEspecial = dadosUsuario.includes("júnior") || dadosUsuario.includes("junior") || 
+                                     dadosUsuario.includes("andressa") || dadosUsuario.includes("sheila");
+
+        if (temPermissaoEspecial) {
+            alert("⚠️ AVISO: Esta data é um final de semana, feriado ou exceção.\n\nComo você tem permissão especial da gestão, o evento SERÁ SALVO!");
+            // Sem o comando 'return' aqui, o código segue e salva.
+        } else {
+            alert("🚨 AÇÃO BLOQUEADA! Esta data está registrada como final de semana, feriado ou exceção.\n\nPor favor, procure a Coordenadora ou a Diretora para liberação.");
+            return; // 🛑 Impede imediatamente que o evento seja salvo.
+        }
+    }
+    // ---------------------------------------------------------
+
     // 1. 🔒 SEMPRE começa pela nuvem (fonte oficial)
     let events = (config && config.calendarEvents) 
         ? [...config.calendarEvents] 
@@ -8063,7 +8261,7 @@ function renderEventTicker() {
     for (let dataKey in excecoes) {
         const ex = excecoes[dataKey];
         // REGRA: Se o dia foi DESBLOQUEADO (blocked: false), ele é um dia letivo especial!
-        if (ex.blocked === false) {
+        if (ex.blocked === false || ex.blocked === "false") {
             // Verifica se esse dia já não está nos eventos para não duplicar
             const jaExiste = eventosRaw.some(e => e.date === dataKey);
             if (!jaExiste) {
@@ -8185,8 +8383,8 @@ function prepararEdicao(data, titulo) {
   let bloqueado = false;
   let motivo = "";
 
-  if (ex && typeof ex.blocked === "boolean") {
-    bloqueado = (ex.blocked === true);
+  if (ex && typeof ex.blocked !== "undefined" && ex.blocked !== false && ex.blocked !== "false") {
+    bloqueado = true;
     motivo = ex.label ? String(ex.label).trim() : "";
   } else {
     if (typeof isClassDateBlocked === "function" && isClassDateBlocked(data)) {
@@ -8198,7 +8396,7 @@ function prepararEdicao(data, titulo) {
     alert(
       `⚠️ ATENÇÃO: você está EDITANDO um evento em uma data BLOQUEADA (${data}).` +
       (motivo ? `\nMotivo: ${motivo}` : "") +
-      `\n\nVocê pode editar, mas ao SALVAR o sistema pode bloquear (conforme a regra).`
+      `\n\nVocê pode editar, mas ao SALVAR o sistema pode bloquear (conforme a regra de permissão).`
     );
   }
 
@@ -8225,8 +8423,6 @@ function prepararEdicao(data, titulo) {
     document.getElementById('modalTituloInput').focus();
   }
 }
-
-
 // Função toggleTicker (Resolve o erro toggleTicker is not defined)
 function toggleTicker() {
     const ticker = document.getElementById('event-ticker-content');
@@ -9656,8 +9852,19 @@ function printGradeReport() {
 
   if (!list.length) return alert("Nenhuma aula cadastrada para imprimir.");
 
-  const daysOrder = ["Segunda", "Tera", "Quarta", "Quinta", "Sexta"];
-  list.sort((a, b) => (daysOrder.indexOf(a.dia) - daysOrder.indexOf(b.dia)) || a.hora.localeCompare(b.hora));
+  // AQUI FOI CORRIGIDO O "TERA" PARA "Terça"
+  const daysOrder = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+  
+  // Ordenação aprimorada: Primeiro por Dia, depois por Turma, depois por Horário
+  list.sort((a, b) => {
+      const diaDiff = daysOrder.indexOf(a.dia) - daysOrder.indexOf(b.dia);
+      if (diaDiff !== 0) return diaDiff; // Se os dias são diferentes, ordena pelo dia
+      
+      const turmaDiff = a.turma.localeCompare(b.turma);
+      if (turmaDiff !== 0) return turmaDiff; // Se mesmo dia, ordena pela turma
+      
+      return a.hora.localeCompare(b.hora); // Se mesmo dia e turma, ordena pela hora
+  });
 
   const rows = list.map(g => `
     <tr>
@@ -9712,7 +9919,7 @@ function printGradeReport() {
       <body>
 
         <div class="topbar no-print" style="display:flex; justify-content:center; gap:20px; padding:15px; background:#f8f9fa; border-bottom:1px solid #eee; margin-bottom: 20px;">
-           
+            
             <button onclick="window.close()" 
                     style="width: 150px; height: 40px;
                            background-color: #ffebee !important; 
