@@ -1714,9 +1714,15 @@ function getFaltas(aluno, materia) {
 
 function totalFaltasGeral(aluno) {
     let soma = 0;
-    // Como atualizamos a lista SUBJECTS lá em cima, essa função agora 
-    // já soma automaticamente as faltas de Inglês 1º Ano B também!
-    SUBJECTS.forEach(materia => soma += getFaltas(aluno, materia)); 
+    
+    // 🚀 O SEGREDO: Filtramos a lista para ignorar o Inglês 1B antes de somar
+    SUBJECTS.forEach(materia => {
+        // Se a matéria for o Inglês do 1º B, o sistema ignora e não soma no total!
+        if (materia === 'INGLÊS 1º ANO B') return; 
+
+        soma += getFaltas(aluno, materia);
+    });
+    
     return soma;
 }
 
@@ -4454,7 +4460,7 @@ function toggleAllMonths() {
 
 
 /* =================================================================================
-   2. FUNÇÃO DO BOLETIM (AJUSTADA E FINALIZADA)
+   2. FUNÇÃO DO BOLETIM (AJUSTADA E FINALIZADA COM FILTRO DE MATÉRIA)
    ================================================================================= */
 function printReport() {
     if (typeof currentClassContext === 'undefined' || !currentClassContext) { 
@@ -4478,10 +4484,8 @@ function printReport() {
 
     let htmlContent = '';
     
-    // Lista de matérias (Garante que não dê erro se SUBJECTS sumir)
     const listaMaterias = (typeof SUBJECTS !== 'undefined') ? SUBJECTS : ['Português','Matemática','História','Geografia','Ciências','Arte','Inglês','Educação Física'];
 
-    // Loop para processar os alunos (2 por página)
     for (let i = 0; i < students.length; i += 2) {
         
         const renderSingle = (std) => {
@@ -4490,6 +4494,10 @@ function printReport() {
             let rows = '';
             
             listaMaterias.forEach((subj, idx) => {
+                
+                // 🚀 TRAVA DEFINITIVA: Se a matéria for o Inglês 1B, ela não entra no boletim de impressão!
+                if (subj.toUpperCase().trim() === "INGLÊS 1º ANO B") return;
+
                 let sumGrades = 0, countGrades = 0, tds = '';
                 
                 // 1. Notas Bimestrais
@@ -4501,7 +4509,7 @@ function printReport() {
                     if (val !== null) { sumGrades += val; countGrades++; }
                 }
                 
-                // 2. CÁLCULO DE FALTAS (USANDO A NOVA FUNÇÃO AJUDANTE)
+                // 2. CÁLCULO DE FALTAS
                 let nFaltas = contarFaltasPorMateria(std, subj);
                 
                 // 3. Média e Recuperação
@@ -4557,6 +4565,9 @@ function printReport() {
             ${renderSingle(students[i+1])}
         </div>`;
     }
+
+    // --- CONTINUAÇÃO DA FUNÇÃO (ESTILOS E IMPRESSÃO) ---
+    // (Lembre-se de fechar a função printReport com o fechamento da janela win.document.write se houver no seu original)
 
     win.document.write(`
         <html>
@@ -6690,6 +6701,18 @@ function renderGrades() {
 
   if (sIdx !== -1) {
     const subName = SUBJECTS[sIdx];
+
+    // 🚀 SUPER TRAVA: Compara o nome sem espaços e tudo em maiúsculas
+    const nomeLimpo = subName.toUpperCase().trim();
+    if (nomeLimpo === "INGLÊS 1º ANO B" || nomeLimpo === "INGLES 1º ANO B" || nomeLimpo === "INGLÊS 1B") {
+        document.getElementById('view-grades').innerHTML = `
+            <div style="padding:20px; color:#c62828; background:#fff5f5; border-radius:8px; border:1px solid #ffcdd2; font-weight:bold; text-align:center;">
+                ⚠️ Esta disciplina (INGLÊS 1º ANO B) é de uso interno da coordenação.<br>
+                As notas oficiais devem ser consultadas na disciplina "LÍNGUA INGLESA".
+            </div>`;
+        return;
+    }
+
     let tableRows = '';
 
     students.forEach((std, studentIdx) => {
@@ -6764,6 +6787,9 @@ if (count > 0 || conselhoOverride !== null) {
     ? `<b style="color:#28a745">APROVADO</b>`
     : `<b style="color:#dc3545">CONSELHO</b>`;
 }
+
+
+
 
 // 4) Exibição da média final
 let mediaDisplay = "-";
