@@ -2331,6 +2331,292 @@ window.TURMABTNSTYLE = {
   "1º ANO A": { h:"50px", font:"15px", padY:"11px", padX:"20px", minW:"140px" }
 };
 
+
+
+
+
+function verificarFimBimestre() {
+    if (!config || !config.bimesters) return "";
+
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0); // Zera as horas para a conta ficar exata
+
+    for (let i = 1; i <= 4; i++) {
+        const bim = config.bimesters[i];
+        if (bim && bim.end) {
+            // Pega a data de fim do bimestre
+            const fimBimestre = new Date(bim.end + "T12:00:00");
+            fimBimestre.setHours(0,0,0,0);
+            
+            // Calcula a diferença em dias
+            const diffTempo = fimBimestre.getTime() - hoje.getTime();
+            const diffDias = Math.ceil(diffTempo / (1000 * 3600 * 24));
+
+            // Se faltarem entre 0 e 5 dias, dispara o alerta!
+            if (diffDias >= 0 && diffDias <= 5) {
+                const diasTexto = diffDias === 0 ? "HOJE" : `${diffDias} dia(s)`;
+                return `
+                    <div style="background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; border-left: 5px solid #d32f2f; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); animation: pulse 2s infinite;">
+                        <span style="font-size: 1.5em;">⏳</span>
+                        <div>
+                            <div style="font-size: 1.1em;">ATENÇÃO: O ${i}º Bimestre termina em ${diasTexto}!</div>
+                            <div style="font-size: 0.85em; font-weight: normal; margin-top: 3px;">Por favor, atualize todas as Faltas, Notas e o Diário/Semanário o mais breve possível!</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    }
+    return ""; // Se não estiver perto do fim, não mostra nada
+}
+
+
+
+
+function verificarChamadasAtrasadas() {
+    // Travas de segurança: se não carregou os dados ainda, não faz nada
+    if (!currentUser || !currentUser.classes || !masterData) return "";
+
+    const hoje = new Date();
+    hoje.setHours(0,0,0,0);
+
+    // 1. Acha o bimestre atual baseado na data de hoje
+    let startBimestre = null;
+    if (config && config.bimesters) {
+        for (let i = 1; i <= 4; i++) {
+            const b = config.bimesters[i];
+            if (b && b.start && b.end) {
+                const dStart = new Date(b.start + "T12:00:00");
+                const dEnd = new Date(b.end + "T12:00:00");
+                dStart.setHours(0,0,0,0);
+                dEnd.setHours(0,0,0,0);
+                if (hoje >= dStart && hoje <= dEnd) {
+                    startBimestre = dStart;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Se estivermos fora do período letivo (férias), não cobra nada.
+    if (!startBimestre) return ""; 
+
+    let pendencias = [];
+
+    // 2. Vamos rastrear os últimos 10 dias para trás (até o limite do inicio do bimestre)
+    let diasParaChecar = [];
+    let dataCheck = new Date(hoje);
+    dataCheck.setDate(dataCheck.getDate() - 1); // Começa checando de "ontem" pra trás
+
+    let limiteBusca = 10; 
+    let diasBuscados = 0;
+
+    while (dataCheck >= startBimestre && diasBuscados < limiteBusca) {
+        const diaSemana = dataCheck.getDay();
+        const strDate = dataCheck.toISOString().split('T')[0];
+
+        // Pula fim de semana (0=Dom, 6=Sáb) por padrão
+        let letivo = (diaSemana !== 0 && diaSemana !== 6);
+
+        // Verifica as Exceções da Nuvem (Feriados bloqueiam, Sábados letivos liberam)
+        if (config && config.exceptions && config.exceptions[strDate]) {
+            if (config.exceptions[strDate].blocked === true || config.exceptions[strDate].blocked === "true") {
+                letivo = false;
+            } else if (config.exceptions[strDate].blocked === false || config.exceptions[strDate].blocked === "false") {
+                letivo = true; // Sábado letivo especial
+            }
+        }
+
+        if (letivo) {
+            diasParaChecar.push(strDate); // Guarda os dias que TEVE aula
+        }
+
+        dataCheck.setDate(dataCheck.getDate() - 1); // Volta 1 dia
+        diasBuscados++;
+    }
+
+    // 3. Verifica as turmas exatas do professor logado
+    currentUser.classes.forEach(idTurma => {
+        const turmaData = masterData[idTurma];
+        if (!turmaData || turmaData.length === 0) return; // Pula se a turma estiver vazia
+
+        // Pega o primeiro aluno como "Boi de Piranha" para ver se a chamada foi feita
+        const alunoRef = turmaData[0];
+        const diario = alunoRef.diary || {};
+
+        let diasFaltando = [];
+        
+        // Verifica todos os dias letivos recentes
+        diasParaChecar.forEach(d => {
+            // Se a data NÃO estiver no diário, ele esqueceu de fazer a chamada!
+            if (!diario[d]) {
+                const [ano, mes, dia] = d.split('-'); // Formata para o padrão BR
+                diasFaltando.push(`${dia}/${mes}`);
+            }
+        });
+
+        if (diasFaltando.length > 0) {
+            pendencias.push(`<b>${idTurma}</b>: ${diasFaltando.reverse().join(', ')}`);
+        }
+    });
+
+    // 4. Se encontrou algum esquecimento, monta a caixa de aviso Laranja!
+    if (pendencias.length > 0) {
+        return `
+            <div style="background-color: #fff3e0; color: #e65100; border: 1px solid #ffcc80; border-left: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 8px;">
+                    <span style="font-size: 1.5em;">📋</span>
+                    <span style="font-size: 1.1em;">PENDÊNCIAS DE CHAMADA DETECTADAS!</span>
+                </div>
+                <div style="font-size: 0.95em; color: #bf360c; line-height: 1.5;">
+                    Notamos que as seguintes turmas estão com o Diário/Chamada pendentes nos últimos dias letivos:<br>
+                    <ul style="margin-top: 5px; margin-bottom: 0; padding-left: 20px;">
+                        ${pendencias.map(p => `<li>${p}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+        `;
+    }
+
+    return ""; // Se tá tudo em dia, não mostra nada!
+}
+
+
+
+
+
+// =======================================================
+// 🚨 MÓDULO EXCLUSIVO DA GESTÃO: DELETAR CHAMADAS (V2) 🚨
+// =======================================================
+
+function abrirGestaoDeletarChamada() {
+    // 1. Verifica permissão de ferro (Garantia para o Júnior e Coordenação)
+    const isGestao = currentUser && (
+        (currentUser.displayName && (
+            currentUser.displayName.includes('Júnior') || 
+            currentUser.displayName.includes('Junior') ||
+            currentUser.displayName.includes('Andressa') || 
+            currentUser.displayName.includes('Sheila')
+        )) || 
+        currentUser.email === 'junior@gp' || 
+        currentUser.id === 'junior@gp'
+    );
+
+    if (!isGestao) {
+        return alert("⛔ Sem permissão! Apenas a Direção/Coordenação pode apagar chamadas do sistema.");
+    }
+
+    // 2. Cria a tela (Modal) flutuante dinamicamente
+    const turmas = Object.keys(masterData).sort();
+    const modalId = "modalDeleteChamadaInjetado";
+    
+    let modal = document.getElementById(modalId);
+    if (modal) modal.remove(); // Limpa se já existir
+
+    modal = document.createElement("div");
+    modal.id = modalId;
+    modal.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter: blur(3px);";
+
+    let options = turmas.map(t => `<option value="${t}">${t}</option>`).join('');
+
+    modal.innerHTML = `
+        <div style="background:#fff; width:90%; max-width:420px; border-radius:12px; padding:25px; box-shadow:0 15px 30px rgba(0,0,0,0.3); position:relative; animation: fadeIn 0.3s;">
+            <button onclick="document.getElementById('${modalId}').remove()" style="position:absolute; top:10px; right:12px; background:none; border:none; font-size:16px; color:#aaa; cursor:pointer; padding:5px; transition:0.2s;" onmouseover="this.style.color='#f44336'" onmouseout="this.style.color='#aaa'">✖</button>
+            
+            <h3 style="margin-top:0; color:#c62828; display:flex; align-items:center; gap:8px; font-size:1.3em;">
+                <span style="font-size:1.2em;">🗑️</span> Limpar Chamadas
+            </h3>
+            <p style="font-size:12px; color:#666; margin-bottom:15px; line-height:1.4;">Escolha a turma (ou "Todas") e o período. Se for apenas um dia, coloque a mesma data no início e no fim.</p>
+
+            <label style="font-weight:bold; font-size:12px; color:#444;">Turma Alvo:</label>
+            <select id="adminDelChamadaTurma" style="width:100%; padding:10px; margin-top:5px; margin-bottom:12px; border-radius:6px; border:1px solid #ddd; background-color:#f9f9f9; font-size:13px;">
+                <option value="TODAS" style="font-weight:bold; color:#d32f2f;">🚨 TODAS AS TURMAS DO SISTEMA</option>
+                <option value="" disabled selected>-- Ou escolha uma turma específica --</option>
+                ${options}
+            </select>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <label style="font-weight:bold; font-size:12px; color:#444;">Data Inicial:</label>
+                    <input type="date" id="adminDelChamadaDataIni" style="width:100%; padding:10px; margin-top:5px; border-radius:6px; border:1px solid #ddd; background-color:#f9f9f9; font-size:13px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-weight:bold; font-size:12px; color:#444;">Data Final:</label>
+                    <input type="date" id="adminDelChamadaDataFim" style="width:100%; padding:10px; margin-top:5px; border-radius:6px; border:1px solid #ddd; background-color:#f9f9f9; font-size:13px;">
+                </div>
+            </div>
+
+            <button onclick="executarDeleteChamadaAdmin()" style="width:100%; padding:12px; background-color:#ef5350; color:#fff; border:none; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow:0 3px 0px #c62828; transition: all 0.1s;"
+                onmousedown="this.style.transform='translateY(3px)'; this.style.boxShadow='0 0px 0px #c62828';"
+                onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 3px 0px #c62828';">
+                💥 DELETAR REGISTROS
+            </button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function executarDeleteChamadaAdmin() {
+    const turma = document.getElementById('adminDelChamadaTurma').value;
+    const dataIni = document.getElementById('adminDelChamadaDataIni').value;
+    const dataFim = document.getElementById('adminDelChamadaDataFim').value;
+
+    if (!turma) return alert("⚠️ Selecione uma turma (ou 'TODAS')!");
+    if (!dataIni || !dataFim) return alert("⚠️ Escolha a data inicial e a data final!");
+    if (dataIni > dataFim) return alert("⚠️ A data inicial não pode ser maior que a data final!");
+
+    // 1. Gera a lista de todas as datas entre o Início e o Fim
+    const datasAlvo = [];
+    let atual = new Date(dataIni + "T12:00:00");
+    const limite = new Date(dataFim + "T12:00:00");
+    
+    while (atual <= limite) {
+        datasAlvo.push(atual.toISOString().split('T')[0]);
+        atual.setDate(atual.getDate() + 1);
+    }
+
+    // 2. Define se vai varrer o sistema inteiro ou só uma turma
+    const turmasAlvo = turma === "TODAS" ? Object.keys(masterData) : [turma];
+    let chamadasApagadas = 0;
+
+    const msgConfirmacao = `🚨 ATENÇÃO MÁXIMA 🚨\n\nVocê vai apagar as chamadas de:\nTurma(s): ${turma === "TODAS" ? "TODAS AS TURMAS DO SISTEMA" : turma}\nPeríodo: ${dataIni.split('-').reverse().join('/')} até ${dataFim.split('-').reverse().join('/')}\n\nDeseja realmente explodir esses dados?`;
+
+    if (confirm(msgConfirmacao)) {
+        // 3. O Trator: Varre as turmas, depois os alunos, depois as datas, e apaga tudo
+        turmasAlvo.forEach(t => {
+            if (masterData[t]) {
+                masterData[t].forEach(aluno => {
+                    if (aluno.diary) {
+                        datasAlvo.forEach(d => {
+                            if (aluno.diary[d]) {
+                                delete aluno.diary[d];
+                                chamadasApagadas++;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        if (chamadasApagadas === 0) {
+            return alert("🤷‍♂️ Nenhuma chamada foi encontrada nesse período para a(s) turma(s) selecionada(s).");
+        }
+
+        // 4. Salva o estrago (limpeza) na nuvem
+        if (typeof saveSystem === 'function') saveSystem();
+
+        alert(`✅ Limpeza Concluída!\nForam varridos ${chamadasApagadas} registros de presença dos alunos.`);
+        document.getElementById('modalDeleteChamadaInjetado').remove();
+        
+        // Atualiza a tela se estiver na página de presenças
+        if (typeof renderAttend === 'function') renderAttend();
+    }
+}
+
+
+
+
+
 function renderHome() {
     // --- 🚨 AUTO-REPARO DO BANCO DE DADOS (INJETA OS ALUNOS) 🚨 ---
     if (typeof masterData !== 'undefined' && !masterData['INGLÊS 1º ANO A']) {
@@ -2409,6 +2695,9 @@ function renderHome() {
             
             ${slideshowHTML}
 
+            ${typeof verificarFimBimestre === 'function' ? verificarFimBimestre() : ''}
+            ${typeof verificarChamadasAtrasadas === 'function' ? verificarChamadasAtrasadas() : ''}
+
             <div class="card">
                 <div id="eventTicker"></div>
                 
@@ -2481,7 +2770,7 @@ function renderHome() {
   })()}
 </div>
 
-  <div class="card">
+<div class="card">
     <h3>Gestão do Sistema</h3>
     <div class="grid-buttons" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 15px;">
         
@@ -2497,7 +2786,10 @@ function renderHome() {
         <button class="main-button" style="height: 45px; font-size: 13px !important; white-space: nowrap !important; padding: 0 5px !important; background-color: #f3e5f5 !important; color: #4a148c !important; border: 1px solid #e1bee7 !important; box-shadow: 0px 4px 0px #ce93d8 !important; border-radius: 6px !important; font-weight: bold !important; display: flex; align-items: center; justify-content: center; gap: 5px;" 
                 onclick="renderReportAI()">📝 Relatório</button>
 
-        ${isAdmin ? `
+${isAdmin ? `
+        <button class="main-button" style="height: 45px; font-size: 13px !important; white-space: nowrap !important; padding: 0 5px !important; background-color: #f3e5f5 !important; color: #4a148c !important; border: 1px solid #e1bee7 !important; box-shadow: 0px 4px 0px #ce93d8 !important; border-radius: 6px !important; font-weight: bold !important; display: flex; align-items: center; justify-content: center; gap: 5px;" 
+                onclick="abrirGestaoDeletarChamada()">🗑️ Limpar Chamada</button>
+
         <button class="main-button" style="height: 45px; font-size: 13px !important; white-space: nowrap !important; padding: 0 5px !important; background-color: #f3e5f5 !important; color: #4a148c !important; border: 1px solid #e1bee7 !important; box-shadow: 0px 4px 0px #ce93d8 !important; border-radius: 6px !important; font-weight: bold !important; display: flex; align-items: center; justify-content: center; gap: 5px;" 
                 onclick="renderAdmin()">🛠️ AVALIAÇÕES</button>` : ''}
     </div>
@@ -2511,6 +2803,7 @@ setTimeout(() => {
 }, 100);
 
 }
+
 
 // --- FUNÇÃO PARA GERAR O PDF FINAL DO RELATÓRIO ---
 function gerarRelatorioPDF() {
@@ -3856,7 +4149,7 @@ s.innerHTML = `
              onmousedown="this.style.boxShadow='0px 2px 0px #90caf9'; this.style.transform='translateY(2px)'"
              onmouseup="this.style.boxShadow='0px 4px 0px #90caf9'; this.style.transform='translateY(0)'"
              onmouseleave="this.style.boxShadow='0px 4px 0px #90caf9'; this.style.transform='translateY(0)'">
-             <span style="font-size:1.3em">🍎</span> Atestados
+             <span style="font-size:1.3em">🍎</span> Documentos
       </button>
 
       <button class="main-button" style="width:100%; height:45px; min-width: 130px;
@@ -4987,7 +5280,7 @@ function renderDocSubmissionForm() {
                     </select>
                 </div>
             </div>
-            <div id="submission-details" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+            <div id="submission-details" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;"> 
                 <p style="text-align: center; color: #6c757d;">Selecione opções.</p>
             </div>`;
         }
@@ -7486,11 +7779,6 @@ function ativarSincronizacaoTempoReal() {
 
 
 
-
-
-
-
-
 function renderLegendaEventos() {
     const legendContainer = document.getElementById('calendar-legend');
     if (!legendContainer) return;
@@ -8178,8 +8466,6 @@ async function addCalendarEvent(date, title, description) {
     
     // 1. Verifica se a data está nas exceções da nuvem
     if (typeof config !== 'undefined' && config.exceptions && config.exceptions[date]) {
-        // Se a data está nas exceções e NÃO está marcada explicitamente como letiva (false), ela é bloqueada.
-        // Isso cobre casos onde o Firebase salva como texto "true" ou undefined.
         if (config.exceptions[date].blocked !== false && config.exceptions[date].blocked !== "false") {
             dataBloqueada = true;
         }
@@ -8196,7 +8482,6 @@ async function addCalendarEvent(date, title, description) {
             dadosUsuario += (firebase.auth().currentUser.displayName || "") + " ";
             dadosUsuario += (firebase.auth().currentUser.email || "") + " ";
         }
-        // Tenta pegar também caso você salve o nome no navegador
         dadosUsuario += (localStorage.getItem('userName') || localStorage.getItem('usuarioLogado') || localStorage.getItem('nomeUsuario') || "");
         
         dadosUsuario = dadosUsuario.toLowerCase();
@@ -8206,8 +8491,17 @@ async function addCalendarEvent(date, title, description) {
                                      dadosUsuario.includes("andressa") || dadosUsuario.includes("sheila");
 
         if (temPermissaoEspecial) {
-            alert("⚠️ AVISO: Esta data é um final de semana, feriado ou exceção.\n\nComo você tem permissão especial da gestão, o evento SERÁ SALVO!");
-            // Sem o comando 'return' aqui, o código segue e salva.
+            alert("⚠️ AVISO: Esta data é um final de semana, feriado ou exceção.\n\nComo você tem permissão especial da gestão, o evento SERÁ SALVO e a data desbloqueada no Letreiro!");
+            
+            // 🔓 GOLPE DE MESTRE: Transforma a data bloqueada em um "Dia Letivo" automaticamente!
+            if (typeof config !== 'undefined') {
+                if (!config.exceptions) config.exceptions = {};
+                config.exceptions[date] = {
+                    blocked: false, // Libera a data para o Letreiro ler
+                    label: title.toUpperCase()
+                };
+            }
+            
         } else {
             alert("🚨 AÇÃO BLOQUEADA! Esta data está registrada como final de semana, feriado ou exceção.\n\nPor favor, procure a Coordenadora ou a Diretora para liberação.");
             return; // 🛑 Impede imediatamente que o evento seja salvo.
@@ -8239,26 +8533,28 @@ async function addCalendarEvent(date, title, description) {
     // 6. Atualiza cache local (backup)
     localStorage.setItem('calendarEvents', JSON.stringify(events));
 
-  // 🚀 7. SALVAMENTO PROFISSIONAL (TEMPO REAL)
-await salvarEventosNoFirebase();
+    // 🚀 7. SALVAMENTO PROFISSIONAL (TEMPO REAL)
+    await salvarEventosNoFirebase();
+    
+    // 💾 Garante que a liberação do Letreiro também vá para o banco de dados
+    if (typeof saveSystem === "function") saveSystem();
 
-alert("✅ Evento salvo e sincronizado em tempo real!");
+    alert("✅ Evento salvo e sincronizado em tempo real!");
 
-// 8. Atualiza tela imediatamente (mesma aba)
-if (typeof renderCalendarioAnual === "function") {
-    renderCalendarioAnual();
-}
+    // 8. Atualiza tela imediatamente (mesma aba)
+    if (typeof renderCalendarioAnual === "function") {
+        renderCalendarioAnual();
+    }
 
-if (typeof renderEventTicker === "function") {
-    renderEventTicker();
-}
+    if (typeof renderEventTicker === "function") {
+        renderEventTicker();
+    }
 
-} catch (error) {
+  } catch (error) {
     console.error("Erro ao adicionar evento:", error);
     alert("❌ Erro ao salvar evento.");
+  }
 }
-}
-
 
 
 function getNextCalendarEvents(limit = 5) {
