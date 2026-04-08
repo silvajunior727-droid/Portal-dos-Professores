@@ -25,7 +25,7 @@ firebase.initializeApp(firebaseConfig);
 // 🔵 Banco principal (Firestore)
 const db = firebase.firestore();
 
-// 🟢 Banco tempo real (Realtime Database)
+// 🟢 Banco tempo real (Realtime Database)  
 const rtdb = firebase.database();
 
 
@@ -4460,7 +4460,7 @@ function toggleAllMonths() {
 
 
 /* =================================================================================
-   2. FUNÇÃO DO BOLETIM (AJUSTADA E FINALIZADA COM FILTRO DE MATÉRIA)
+   2. FUNÇÃO DO BOLETIM (EDITÁVEL - CORRIGIDO)
    ================================================================================= */
 function printReport() {
     if (typeof currentClassContext === 'undefined' || !currentClassContext) { 
@@ -4474,7 +4474,9 @@ function printReport() {
         return; 
     }
     
-    students.sort((a, b) => a.name.localeCompare(b.name));
+    // Copia a array para ordenar sem bagunçar o masterData original
+    const studentsCopy = [...students];
+    studentsCopy.sort((a, b) => a.name.localeCompare(b.name));
     
     const limit = (typeof config !== 'undefined' && config.minGrade) ? parseFloat(config.minGrade) : 6.0;
     const logoUrl = "LOGO GP.png"; 
@@ -4486,33 +4488,36 @@ function printReport() {
     
     const listaMaterias = (typeof SUBJECTS !== 'undefined') ? SUBJECTS : ['Português','Matemática','História','Geografia','Ciências','Arte','Inglês','Educação Física'];
 
-    for (let i = 0; i < students.length; i += 2) {
+    for (let i = 0; i < studentsCopy.length; i += 2) {
         
         const renderSingle = (std) => {
             if (!std) return '<div class="boletim-box" style="border:none; visibility:hidden;"></div>';
 
+            const stdIdx = students.findIndex(s => s.name === std.name);
             let rows = '';
             
             listaMaterias.forEach((subj, idx) => {
                 
-                // 🚀 TRAVA DEFINITIVA: Se a matéria for o Inglês 1B, ela não entra no boletim de impressão!
                 if (subj.toUpperCase().trim() === "INGLÊS 1º ANO B") return;
 
                 let sumGrades = 0, countGrades = 0, tds = '';
                 
-                // 1. Notas Bimestrais
                 for (let b = 0; b < 4; b++) {
                     let gradeKey = idx * 4 + b;
                     let val = (std.grades && std.grades[gradeKey] != null && std.grades[gradeKey] !== "") ? parseFloat(std.grades[gradeKey]) : null;
                     
-                    tds += `<td>${val !== null ? val.toFixed(1) : '-'}</td>`;
+                    tds += `<td>
+                        <input type="text" class="nota-editavel" id="nota-${stdIdx}-${idx}-${b}"
+                               value="${val !== null ? val.toFixed(1) : ''}" disabled
+                               oninput="recalcularLinha(${stdIdx}, ${idx})"
+                               style="width:35px; text-align:center; background:transparent; border:none; outline:none; font-family:inherit; font-size:inherit; color:inherit; font-weight:normal;">
+                    </td>`;
+
                     if (val !== null) { sumGrades += val; countGrades++; }
                 }
                 
-                // 2. CÁLCULO DE FALTAS
-                let nFaltas = contarFaltasPorMateria(std, subj);
+                let nFaltas = typeof contarFaltasPorMateria === 'function' ? contarFaltasPorMateria(std, subj) : 0;
                 
-                // 3. Média e Recuperação
                 let avg = countGrades > 0 ? (sumGrades / countGrades) : 0;
                 let finalGrade = avg;
                 
@@ -4529,9 +4534,9 @@ function printReport() {
                 rows += `<tr>
                     <td class="subj-td">${subj}</td>
                     ${tds}
-                    <td style="font-weight:bold; background:#f0f0f0;">${finalGrade.toFixed(1)}</td>
+                    <td id="media-${stdIdx}-${idx}" style="font-weight:bold; background:#f0f0f0;">${finalGrade.toFixed(1)}</td>
                     <td style="font-weight:bold; color:blue;">${nFaltas}</td>
-                    <td style="font-weight:bold; color:${color};">${status}</td>
+                    <td id="status-${stdIdx}-${idx}" style="font-weight:bold; color:${color};">${status}</td>
                 </tr>`;
             });
 
@@ -4560,14 +4565,11 @@ function printReport() {
 
         htmlContent += `
         <div class="print-page">
-            ${renderSingle(students[i])}
+            ${renderSingle(studentsCopy[i])}
             <div class="visual-spacer"></div>
-            ${renderSingle(students[i+1])}
+            ${renderSingle(studentsCopy[i+1])}
         </div>`;
     }
-
-    // --- CONTINUAÇÃO DA FUNÇÃO (ESTILOS E IMPRESSÃO) ---
-    // (Lembre-se de fechar a função printReport com o fechamento da janela win.document.write se houver no seu original)
 
     win.document.write(`
         <html>
@@ -4579,8 +4581,11 @@ function printReport() {
                 .no-print-bar {
                     background: #1a237e; color: #fff; padding: 10px; text-align: center;
                     position: fixed; top: 0; width: 100%; z-index: 999;
+                    display: flex; justify-content: center; gap: 15px; align-items: center;
                 }
-                .btn-p { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+                .btn-p { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; display:flex; align-items:center; gap:8px; font-size:15px; }
+                .btn-e { background: #f1c40f; color: #1f2937; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; display:flex; align-items:center; gap:8px; font-size:15px; transition: 0.2s; }
+                
                 .print-page { width: 297mm; height: 210mm; display: flex; flex-direction: column; align-items: center; padding-top: 5mm; box-sizing: border-box; page-break-after: always; }
                 .boletim-box { width: 270mm; height: 85mm; padding: 4mm; box-sizing: border-box; border: 1.5px solid #000; border-radius: 8px; }
                 .visual-spacer { height: 6mm; width: 270mm; border-bottom: 1px dashed #999; margin: 4mm 0; }
@@ -4592,109 +4597,124 @@ function printReport() {
                 th, td { border: 1px solid #000; padding: 3px; text-align: center; }
                 th { background-color: #f2f2f2; }
                 .subj-td { text-align: left; padding-left: 8px; font-weight: bold; width: 28%; }
-                @media print { .no-print-bar { display: none !important; } }
+                
+                .modo-edicao-ativo { border: 1px dashed #e67e22 !important; background: #fff3e0 !important; }
 
-/* =========================
-   AJUSTES MANUAIS (BOTOES + JANELAS)
-   Não altera lógica do sistema
-   ========================= */
-
-/* 1) Botões - base única */
-button,
-.main-button,
-.header-btn,
-.btn-square,
-.btn-3d-text,
-.btn-3d {
-  border-radius: 14px !important;
-  min-height: 44px;
-  padding: 10px 16px !important;
-  letter-spacing: 0.6px !important;
-}
-
-/* 2) Botões pequenos quadrados (ícones) */
-.btn-square {
-  min-height: 36px;
-  width: 36px !important;
-  height: 36px !important;
-  padding: 0 !important;
-}
-
-/* 3) Botões do header: um pouco mais “premium” */
-.header-btn {
-  min-height: 42px;
-  padding: 10px 18px !important;
-}
-
-/* 4) Modais (overlay) - centralização e suavidade */
-.modal {
-  padding: 18px !important;           /* evita modal colar nas bordas no celular */
-}
-
-/* 5) Caixa do modal (janela) - tamanho padrão */
-.modal-content {
-  border-radius: 16px !important;
-  max-height: 88vh !important;
-  overflow: auto !important;
-}
-
-/* 6) Modais que você monta dentro do #print-modal também ficam consistentes
-      (você usa #print-modal como container de modal em vários pontos) */
-#print-modal .modal-content{
-  border-radius: var(--modal-radius);
-  max-height: var(--modal-max-h);
-  overflow: auto;
-}
-
-</style>
-        </head>
-        <body>
-            <style>
-                /* AJUSTE MÁXIMO DA PRIMEIRA FOLHA */
-                @page :first {
-                    margin-top: 1mm !important;
-                }
-
-                /* MARGENS GERAIS E ELIMINAÇÃO DE PÁGINA VAZIA */
-                @page {
-                    margin: 8mm;
-                }
-
-                @media print {
-                    html, body {
-                        height: auto !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: #fff !important;
-                        overflow: hidden !important; /* Trava o transbordo */
-                    }
-                    
-                    /* O SEGREDO: Impede quebras e esconde restos de código */
-                    .no-print-bar, script, style { display: none !important; }
-                    
-                    /* Garante que o conteúdo não empurre uma nova página */
-                    div { 
-                        page-break-after: avoid !important; 
-                        break-after: avoid !important;
-                    }
+                @media print { 
+                    .no-print-bar { display: none !important; } 
+                    html, body { height: auto !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+                    .nota-editavel { border: none !important; background: transparent !important; }
                 }
             </style>
-            <div class="no-print-bar" style="display:flex; justify-content:center; padding:15px; background:#f8f9fa; border-bottom:1px solid #ddd; position:fixed; top:0; left:0; width:100%; z-index:10000;">
-                <button class="btn-p" 
-                        style="height:45px; padding: 0 30px; background-color: #f1f8f1 !important; color: #1b5e20 !important; border: 1px solid #c8e6c9 !important; box-shadow: 0px 4px 0px #d4e7d4 !important; border-radius: 6px !important; cursor: pointer; font-weight: bold; font-size:16px; display:flex; align-items:center; justify-content:center; gap: 10px; transition: 0.1s;" 
-                        onclick="window.print()"
-                        onmousedown="this.style.boxShadow='0px 2px 0px #d4e7d4'; this.style.transform='translateY(2px)'"
-                        onmouseup="this.style.boxShadow='0px 4px 0px #d4e7d4'; this.style.transform='translateY(0)'"
-                        onmouseleave="this.style.boxShadow='0px 4px 0px #d4e7d4'; this.style.transform='translateY(0)'">
-                    🖨️ IMPRIMIR BOLETINS
-                </button>
+        </head>
+        <body>
+            <div class="no-print-bar">
+                <button class="btn-p" onclick="window.print()">🖨️ IMPRIMIR BOLETINS</button>
+                <button id="btn-editar-bol" class="btn-e" onclick="toggleEdicaoBoletim()">✏️ EDITAR BOLETINS</button>
             </div>
-            <div style="margin-top: 50px; margin-bottom: -50px; position: relative;">${htmlContent}</div>
+            <div style="margin-top: 60px; margin-bottom: -50px; position: relative;">${htmlContent}</div>
+
+            <script>
+                let modoEdicao = false;
+                const limiteMedia = ${limit};
+
+                function toggleEdicaoBoletim() {
+                    const inputs = document.querySelectorAll('.nota-editavel');
+                    const btn = document.getElementById('btn-editar-bol');
+
+                    if (!modoEdicao) {
+                        inputs.forEach(inp => {
+                            inp.disabled = false;
+                            inp.classList.add('modo-edicao-ativo');
+                        });
+                        btn.innerHTML = '💾 SALVAR BOLETINS';
+                        btn.style.backgroundColor = '#e67e22';
+                        btn.style.color = '#fff';
+                        modoEdicao = true;
+                    } else {
+                        inputs.forEach(inp => {
+                            inp.disabled = true;
+                            inp.classList.remove('modo-edicao-ativo');
+
+                            if(window.opener && window.opener.masterData) {
+                                const partes = inp.id.split('-'); 
+                                const stdIdx = parseInt(partes[1]);
+                                const subjIdx = parseInt(partes[2]);
+                                const bim = parseInt(partes[3]);
+                                const gradeKey = (subjIdx * 4) + bim;
+                                const turma = window.opener.currentClassContext;
+
+                                let val = inp.value.replace(',', '.');
+                                if(val === "") {
+                                    window.opener.masterData[turma][stdIdx].grades[gradeKey] = null;
+                                } else {
+                                    window.opener.masterData[turma][stdIdx].grades[gradeKey] = parseFloat(val);
+                                }
+                            }
+                        });
+
+                        btn.innerHTML = '✏️ EDITAR BOLETINS';
+                        btn.style.backgroundColor = '#f1c40f';
+                        btn.style.color = '#1f2937';
+                        modoEdicao = false;
+
+                        alert("✅ Notas alteradas com sucesso no Boletim! Feche esta janela e clique em 'Salvar' no painel principal.");
+                        
+                        if(window.opener && typeof window.opener.renderGrades === 'function') {
+                            window.opener.renderGrades();
+                        }
+                    }
+                }
+
+                function recalcularLinha(stdIdx, subjIdx) {
+                    let sum = 0;
+                    let count = 0;
+
+                    for(let b=0; b<4; b++) {
+                        const inp = document.getElementById('nota-'+stdIdx+'-'+subjIdx+'-'+b);
+                        if(inp && inp.value !== "") {
+                            let val = parseFloat(inp.value.replace(',', '.'));
+                            if(!isNaN(val)) {
+                                sum += val;
+                                count++;
+                            }
+                        }
+                    }
+
+                    let avg = count > 0 ? (sum/count) : 0;
+                    let finalGrade = avg;
+                    
+                    if(window.opener && window.opener.masterData) {
+                        const turma = window.opener.currentClassContext;
+                        const std = window.opener.masterData[turma][stdIdx];
+                        if (std && std.recup && std.recup[subjIdx]) {
+                            let r = std.recup[subjIdx];
+                            if(r.nota && r.nota !== "") {
+                                finalGrade = ((avg * (10 - r.peso)) + (parseFloat(r.nota) * r.peso)) / 10;
+                            }
+                        }
+                    }
+
+                    let finalRound = Math.round((finalGrade + Number.EPSILON) * 10) / 10;
+                    let color = finalRound >= limiteMedia ? '#000' : '#d32f2f';
+                    let status = finalRound >= limiteMedia ? 'APR' : 'CONS';
+
+                    const tdMedia = document.getElementById('media-'+stdIdx+'-'+subjIdx);
+                    const tdStatus = document.getElementById('status-'+stdIdx+'-'+subjIdx);
+
+                    if(tdMedia) tdMedia.innerHTML = count > 0 ? finalRound.toFixed(1) : '-';
+                    if(tdStatus) {
+                        tdStatus.innerHTML = status;
+                        tdStatus.style.color = color;
+                    }
+                }
+            <\/script>
         </body>
         </html>
     `);
     win.document.close();
 }
+
 
 function printBoletimFinal() {
     const content = document.getElementById('boletim-preview-area').innerHTML;
@@ -6326,7 +6346,7 @@ function openClass(className) {
                 onclick="saveRecoveryGrades()"
                 onmousedown="this.style.boxShadow='0px 2px 0px #81c784'; this.style.transform='translateY(2px)'"
                 onmouseup="this.style.boxShadow='0px 5px 0px #81c784'; this.style.transform='translateY(0)'"
-                onmouseleave="this.style.boxShadow='0px 5px 0px #81c784'; this.style.transform='translateY(0)'">
+                onmouseleave="this.style.boxShadow='0px 5px 0px #81c784'; this.style.transform='translateY(0)'"> 
             💾 Salvar Notas de Recuperação
         </button>
     </div> <div id="tab-weekly" class="tab-content">
@@ -6687,6 +6707,57 @@ function saveDiary() {
   alert("Diário salvo!");
 }
 
+
+
+
+
+// 🟢 BLOCO NOVO: Recalcula a média na tela enquanto o professor digita
+function calcularMediaLive(studentIdx) {
+    let sum = 0;
+    let count = 0;
+    // Puxa o limite da escola (padrão 6.0)
+    const limit = config && config.minGrade ? parseFloat(config.minGrade) : 6.0;
+
+    // Procura as notas dos 4 bimestres deste aluno específico
+    for (let b = 1; b <= 4; b++) {
+        const input = document.getElementById(`nota-${studentIdx}-${b}`);
+        if (input && input.value !== "") {
+            // Troca vírgula por ponto (caso o professor digite errado) e converte para número
+            let val = parseFloat(input.value.replace(',', '.'));
+            if (!isNaN(val)) {
+                sum += val;
+                count++;
+            }
+        }
+    }
+
+    // Calcula a nova média
+    let avg = count > 0 ? (sum / count) : 0;
+    let finalValRound = Math.round((avg + Number.EPSILON) * 10) / 10;
+
+    // 1. Atualiza a caixinha da Média Final
+    const inputMedia = document.getElementById(`media-${studentIdx}`);
+    if (inputMedia) {
+        inputMedia.value = count > 0 ? finalValRound.toFixed(1) : "-";
+    }
+
+    // 2. Atualiza a palavra APROVADO ou CONSELHO
+    const tdStatus = document.getElementById(`status-${studentIdx}`);
+    if (tdStatus) {
+        if (count > 0) {
+            tdStatus.innerHTML = finalValRound >= limit 
+                ? `<b style="color:#28a745">APROVADO</b>` 
+                : `<b style="color:#dc3545">CONSELHO</b>`;
+        } else {
+            tdStatus.innerHTML = "-";
+        }
+    }
+}
+
+
+
+
+
 // --- LÓGICA DE NOTAS FINAIS E RECUPERAÇÃO ---
         // --- VISUAL DAS NOTAS FINAIS COM INPUTS (IGUAL PRELIMINARES) ---
        // 6️⃣ ÍNDICE 6 (Regras de Negócio)
@@ -6702,7 +6773,7 @@ function renderGrades() {
   if (sIdx !== -1) {
     const subName = SUBJECTS[sIdx];
 
-    // 🚀 SUPER TRAVA: Compara o nome sem espaços e tudo em maiúsculas
+    // 🚀 SUPER TRAVA
     const nomeLimpo = subName.toUpperCase().trim();
     if (nomeLimpo === "INGLÊS 1º ANO B" || nomeLimpo === "INGLES 1º ANO B" || nomeLimpo === "INGLÊS 1B") {
         document.getElementById('view-grades').innerHTML = `
@@ -6718,7 +6789,7 @@ function renderGrades() {
     students.forEach((std, studentIdx) => {
       let sum = 0, count = 0, tds = '';
 
-      // 1) Notas bimestrais (modelo REAL: 1D)
+      // 1) Notas bimestrais
       for (let b = 0; b < 4; b++) {
         const gradeKey = (sIdx * 4) + b;
         const g = std.grades[gradeKey];
@@ -6728,32 +6799,28 @@ function renderGrades() {
         const recDone = std.recupDone && std.recupDone[`${sIdx}-${bim}`];
         const precisaRec = (val !== null && !isNaN(val) && val < limit);
 
-        // Campo da nota
+        // 🟢 MUDANÇA: Adicionado ID único e oninput para calcular ao vivo
         let cellHTML = `
-          <input type="text" value="${val !== null && !isNaN(val) ? val.toFixed(1) : ''}"
-            class="input-admin" disabled
+          <input type="text" id="nota-${studentIdx}-${bim}" 
+            value="${val !== null && !isNaN(val) ? val.toFixed(1) : ''}"
+            class="input-admin nota-editavel" disabled
+            oninput="calcularMediaLive(${studentIdx})"
             style="width:60px; text-align:center; background:#fdfdfd; border:1px solid #ccc; height:32px; padding:0;">
         `;
 
-       // Botão REC por bimestre (independente da média final)
         if (precisaRec && !recDone) {
           cellHTML += `
             <div style="margin-top:4px;">
               <button class="main-button"
                 style="font-size:10px; padding:3px 6px; width:60px; height:22px; background-color:#e3f2fd !important; color:#0d47a1 !important; border:1px solid #bbdefb !important; box-shadow:0px 2px 0px #90caf9 !important; border-radius:4px !important; cursor:pointer; font-weight:bold; display:inline-flex; align-items:center; justify-content:center; transition:0.1s;"
-                onclick="openRecoveryCalculator(${studentIdx}, ${sIdx}, ${bim}, ${val})"
-                onmousedown="this.style.boxShadow='0px 1px 0px #90caf9'; this.style.transform='translateY(1px)'"
-                onmouseup="this.style.boxShadow='0px 2px 0px #90caf9'; this.style.transform='translateY(0)'"
-                onmouseleave="this.style.boxShadow='0px 2px 0px #90caf9'; this.style.transform='translateY(0)'">
+                onclick="openRecoveryCalculator(${studentIdx}, ${sIdx}, ${bim}, ${val})">
                 REC
               </button>
             </div>
           `;
         } else if (precisaRec && recDone) {
           cellHTML += `
-            <div style="margin-top:4px; font-size:10px; color:#28a745; font-weight:bold;">
-              OK
-            </div>
+            <div style="margin-top:4px; font-size:10px; color:#28a745; font-weight:bold;">OK</div>
           `;
         }
 
@@ -6762,69 +6829,67 @@ function renderGrades() {
         if (val !== null && !isNaN(val)) { sum += val; count++; }
       }
 
-    
-// 2) Média final (padrão = média simples dos bimestres preenchidos)
-const avg = count ? (sum / count) : 0;
+      // 2) Média final
+      const avg = count ? (sum / count) : 0;
+      let conselhoOverride = null;
+      if (std && std.conselhoFinal && std.conselhoFinal[sIdx] !== undefined && std.conselhoFinal[sIdx] !== null && std.conselhoFinal[sIdx] !== "") {
+        const v = parseFloat(String(std.conselhoFinal[sIdx]).replace(",", "."));
+        conselhoOverride = isNaN(v) ? null : v;
+      }
 
-// --- NOVO: override do Conselho (fechamento final) ---
-// Se existir std.conselhoFinal[sIdx], ele substitui a média final exibida e o status.
-let conselhoOverride = null;
-if (std && std.conselhoFinal && std.conselhoFinal[sIdx] !== undefined && std.conselhoFinal[sIdx] !== null && std.conselhoFinal[sIdx] !== "") {
-  const v = parseFloat(String(std.conselhoFinal[sIdx]).replace(",", "."));
-  conselhoOverride = isNaN(v) ? null : v;
-}
+      const finalVal = (conselhoOverride !== null) ? conselhoOverride : avg;  
+      const finalValRound = Math.round((finalVal + Number.EPSILON) * 10) / 10;
 
-// Valor final que o sistema vai considerar (se tiver override, manda nele)
-const finalVal = (conselhoOverride !== null) ? conselhoOverride : avg;  
+      // 3) Status
+      let statusHTML = "-";
+      if (count > 0 || conselhoOverride !== null) {
+        statusHTML = finalValRound >= limit
+          ? `<b style="color:#28a745">APROVADO</b>`
+          : `<b style="color:#dc3545">CONSELHO</b>`;
+      }
 
-// Regra oficial: arredonda 1 casa antes do status
-const finalValRound = Math.round((finalVal + Number.EPSILON) * 10) / 10;
+      // 4) Exibição da média final
+      let mediaDisplay = "-";
+      if (count > 0 || conselhoOverride !== null) {
+        mediaDisplay = (!isNaN(finalValRound)) ? finalValRound.toFixed(1) : "-";
+      }
 
-// 3) Status usa a nota arredondada (considerando override)
-let statusHTML = "-";
-if (count > 0 || conselhoOverride !== null) {
-  statusHTML = finalValRound >= limit
-    ? `<b style="color:#28a745">APROVADO</b>`
-    : `<b style="color:#dc3545">CONSELHO</b>`;
-}
+      let conselhoBadge = "";
+      if (conselhoOverride !== null) {
+        conselhoBadge = `<div style="font-size:10px; color:#6c757d; margin-top:3px;">Conselho: ${finalValRound.toFixed(1)}</div>`;
+      }
 
-
-
-
-// 4) Exibição da média final
-let mediaDisplay = "-";
-if (count > 0 || conselhoOverride !== null) {
-  mediaDisplay = (!isNaN(finalValRound)) ? finalValRound.toFixed(1) : "-";
-}
-
-// (Opcional recomendado) marcador visual quando veio do Conselho
-let conselhoBadge = "";
-if (conselhoOverride !== null) {
-  conselhoBadge = `<div style="font-size:10px; color:#6c757d; margin-top:3px;">Conselho: ${finalValRound.toFixed(1)}</div>`;
-}
-
-
-tableRows += `
+      tableRows += `
         <tr>
           <td style="text-align:left; padding-left:15px; font-weight:500;">${std.name}</td>
           ${tds}
           
-<td style="background:#f0f0f0 !important">
-  <input type="text" value="${mediaDisplay}" class="input-admin" disabled style="width:55px; text-align:center; background:#eee; font-weight:bold; border:1px solid #bbb; height:32px; border-radius:6px;">
-  ${conselhoBadge}
-</td>
+          <td style="background:#f0f0f0 !important">
+            <input type="text" id="media-${studentIdx}" value="${mediaDisplay}" class="input-admin" disabled style="width:55px; text-align:center; background:#eee; font-weight:bold; border:1px solid #bbb; height:32px; border-radius:6px;">
+            ${conselhoBadge}
+          </td>
 
-          
-<td style="text-align:center;">${statusHTML}</td>
+          <td id="status-${studentIdx}" style="text-align:center;">${statusHTML}</td>
         </tr>
       `;
     });
 
+    // 🟢 MUDANÇA: Estrutura HTML do cabeçalho simplificada para garantir que o botão apareça
     html = `
-      <div class="card" style="padding:0; border-radius:12px; overflow:hidden; border:1px solid #dee2e6;">
-        <div style="background:#f8f9fa; padding:12px 15px; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">
-          Notas Finais - ${subName}
+      <div id="area-boletim" class="card" style="padding:0; border-radius:12px; overflow:hidden; border:1px solid #dee2e6;">
+        
+        <div style="background:#f8f9fa; padding:15px; border-bottom:1px solid #dee2e6; display:flex; justify-content:space-between; align-items:center;">
+          
+          <div style="font-size: 1.1em; font-weight:bold; color:#2c3e50;">
+            📚 Notas Finais - ${subName}
+          </div>
+          
+          <button style="background-color: #f1c40f; color: #1f2937; border: 2px solid #e0b60e; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" onclick="toggleEdicao('area-boletim', this)">
+            ✏️ EDITAR
+          </button>
+
         </div>
+
         <table style="width:100%; margin-top:0; font-size:0.9em;">
           <thead>
             <tr style="background:#eee; height:40px;">
@@ -6844,6 +6909,7 @@ tableRows += `
 
   document.getElementById('view-grades').innerHTML = html;
 }
+
 
 function calcularFaltasPorDisciplina(std, disciplina, turma) {
     let faltas = 0;
@@ -10200,29 +10266,31 @@ function printGradeReport() {
 
   if (!list.length) return alert("Nenhuma aula cadastrada para imprimir.");
 
-  // AQUI FOI CORRIGIDO O "TERA" PARA "Terça"
   const daysOrder = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
   
-  // Ordenação aprimorada: Primeiro por Dia, depois por Turma, depois por Horário
+  // Ordenação Inicial Padrão
   list.sort((a, b) => {
       const diaDiff = daysOrder.indexOf(a.dia) - daysOrder.indexOf(b.dia);
-      if (diaDiff !== 0) return diaDiff; // Se os dias são diferentes, ordena pelo dia
+      if (diaDiff !== 0) return diaDiff; 
       
       const turmaDiff = a.turma.localeCompare(b.turma);
-      if (turmaDiff !== 0) return turmaDiff; // Se mesmo dia, ordena pela turma
+      if (turmaDiff !== 0) return turmaDiff; 
       
-      return a.hora.localeCompare(b.hora); // Se mesmo dia e turma, ordena pela hora
+      return a.hora.localeCompare(b.hora); 
   });
 
-  const rows = list.map(g => `
+  // Mapeamento das linhas com a Etiqueta Invisível (origIdx)
+  const rows = list.map(g => {
+    const origIdx = config.grade.indexOf(g);
+    return `
     <tr>
-      <td>${g.dia}</td>
-      <td>${g.hora}</td>
-      <td>${g.turma}</td>
-      <td>${g.materia}</td>
-      <td>${g.prof || ""}</td>
+      <td><input type="text" id="g-dia-${origIdx}" class="grade-editavel" value="${g.dia}" disabled style="width:100%; border:none; background:transparent; font-family:inherit; font-size:inherit; color:inherit;"></td>
+      <td><input type="text" id="g-hora-${origIdx}" class="grade-editavel" value="${g.hora}" disabled style="width:100%; border:none; background:transparent; font-family:inherit; font-size:inherit; color:inherit;"></td>
+      <td><input type="text" id="g-turma-${origIdx}" class="grade-editavel" value="${g.turma}" disabled style="width:100%; border:none; background:transparent; font-family:inherit; font-size:inherit; color:inherit;"></td>
+      <td><input type="text" id="g-materia-${origIdx}" class="grade-editavel" value="${g.materia}" disabled style="width:100%; border:none; background:transparent; font-family:inherit; font-size:inherit; color:inherit;"></td>
+      <td><input type="text" id="g-prof-${origIdx}" class="grade-editavel" value="${g.prof || ""}" disabled style="width:100%; border:none; background:transparent; font-family:inherit; font-size:inherit; color:inherit;"></td>
     </tr>
-  `).join("");
+  `}).join("");
 
   const logoUrl = "LOGO GP.png"; 
 
@@ -10234,10 +10302,8 @@ function printGradeReport() {
       <head>
         <title>Grade de Aulas</title>
         <style>
-          /* AQUI: Aumentei o padding da página para 40px (Margem da folha maior) */
           body { font-family: Poppins, Arial, sans-serif; padding: 40px; color:#111; }
           
-          /* Header */
           .header-print {
             display:flex; align-items:center; gap:16px;
             border-bottom: 2px solid #000;
@@ -10247,48 +10313,38 @@ function printGradeReport() {
           .header-text h2 { margin:0; font-size: 18px; text-transform: uppercase; }
           .header-text small { display:block; margin-top:3px; color:#444; }
 
-          /* Tabela */
           table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
           
-          /* AQUI: Aumentei o padding das células (Margens internas maiores) */
-          th, td { 
-              border: 1px solid #000; 
-              padding: 6px 10px; /* Mais espaço interno */
-              text-align: left; 
-          }
+          th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; }
           th { background: #f2f2f2; }
 
+          .coluna-clicavel { cursor: pointer; user-select: none; transition: background 0.2s; position: relative; }
+          .coluna-clicavel:hover { background: #e0e0e0; }
+          .seta-ordem { font-size: 10px; margin-left: 5px; opacity: 0; color: #1a237e; }
+
+          .modo-edicao-ativo { border: 1px dashed #e67e22 !important; background: #fff3e0 !important; outline: none; padding: 2px; }
+
           @media print {
-            body { padding: 40px; } /* Garante a margem na impressão */
+            body { padding: 40px; } 
             .no-print { display:none !important; } 
+            .grade-editavel { border: none !important; background: transparent !important; }
+            .seta-ordem { display: none !important; }
           }
         </style>
       </head>
       <body>
 
         <div class="topbar no-print" style="display:flex; justify-content:center; gap:20px; padding:15px; background:#f8f9fa; border-bottom:1px solid #eee; margin-bottom: 20px;">
-            
             <button onclick="window.close()" 
-                    style="width: 150px; height: 40px;
-                           background-color: #ffebee !important; 
-                           color: #c62828 !important; 
-                           border: 1px solid #ffcdd2 !important; 
-                           box-shadow: 0px 4px 0px #ef5350 !important; 
-                           border-radius: 8px !important; 
-                           font-weight: bold; cursor: pointer; 
-                           display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    style="width: 150px; height: 40px; background-color: #ffebee !important; color: #c62828 !important; border: 1px solid #ffcdd2 !important; box-shadow: 0px 4px 0px #ef5350 !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
                ✖ FECHAR
             </button>
-
+            <button id="btn-editar-grade" onclick="toggleEdicaoGrade()" 
+                    style="width: 150px; height: 40px; background-color: #f1c40f !important; color: #1f2937 !important; border: 1px solid #e0b60e !important; box-shadow: 0px 4px 0px #d4ac0d !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
+               ✏️ EDITAR
+            </button>
             <button onclick="window.print()" 
-                    style="width: 150px; height: 40px;
-                           background-color: #e0f7fa !important; 
-                           color: #006064 !important; 
-                           border: 1px solid #b2ebf2 !important; 
-                           box-shadow: 0px 4px 0px #26c6da !important; 
-                           border-radius: 8px !important; 
-                           font-weight: bold; cursor: pointer; 
-                           display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    style="width: 150px; height: 40px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 4px 0px #26c6da !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
                🖨️ IMPRIMIR
             </button>
         </div>
@@ -10298,21 +10354,134 @@ function printGradeReport() {
           <div class="header-text">
             <h2>Cadastro das Aulas (Grade)</h2>
             <small>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</small>
+            <small class="no-print" style="color:#d32f2f; font-weight:bold; margin-top:5px;">💡 Dica: Clique nos cabeçalhos da tabela para ordenar a lista!</small>
           </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Dia</th>
-              <th>Horário</th>
-              <th>Turma</th>
-              <th>Matéria</th>
-              <th>Professor (a)</th>
+              <th class="coluna-clicavel" onclick="ordenarTabela(0)">Dia <span class="seta-ordem"></span></th>
+              <th class="coluna-clicavel" onclick="ordenarTabela(1)">Horário <span class="seta-ordem"></span></th>
+              <th class="coluna-clicavel" onclick="ordenarTabela(2)">Turma <span class="seta-ordem"></span></th>
+              <th class="coluna-clicavel" onclick="ordenarTabela(3)">Matéria <span class="seta-ordem"></span></th>
+              <th class="coluna-clicavel" onclick="ordenarTabela(4)">Professor (a) <span class="seta-ordem"></span></th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
+
+        <script>
+            // ==========================================
+            // 1. LÓGICA DE ORDENAÇÃO
+            // ==========================================
+            let colunaAtual = -1;
+            let ordemCrescente = true;
+
+            function ordenarTabela(indexColuna) {
+                const tbody = document.querySelector('tbody');
+                const linhas = Array.from(tbody.querySelectorAll('tr'));
+                const cabecalhos = document.querySelectorAll('.coluna-clicavel');
+
+                if (colunaAtual === indexColuna) {
+                    ordemCrescente = !ordemCrescente;
+                } else {
+                    colunaAtual = indexColuna;
+                    ordemCrescente = true;
+                }
+
+                cabecalhos.forEach((th, i) => {
+                    const seta = th.querySelector('.seta-ordem');
+                    if(i === indexColuna) {
+                        seta.innerHTML = ordemCrescente ? '▲' : '▼';
+                        seta.style.opacity = '1';
+                    } else {
+                        seta.style.opacity = '0';
+                    }
+                });
+
+                const pesosDias = {"Segunda": 1, "Terça": 2, "Quarta": 3, "Quinta": 4, "Sexta": 5, "Sábado": 6, "Domingo": 7};
+
+                linhas.sort((a, b) => {
+                    const valorA = a.cells[indexColuna].querySelector('input').value.trim();
+                    const valorB = b.cells[indexColuna].querySelector('input').value.trim();
+
+                    if (indexColuna === 0) {
+                        const pesoA = pesosDias[valorA] || 99;
+                        const pesoB = pesosDias[valorB] || 99;
+                        return ordemCrescente ? pesoA - pesoB : pesoB - pesoA;
+                    }
+
+                    return ordemCrescente 
+                        ? valorA.localeCompare(valorB) 
+                        : valorB.localeCompare(valorA);
+                });
+
+                linhas.forEach(linha => tbody.appendChild(linha));
+            }
+
+            // ==========================================
+            // 2. LÓGICA DE EDIÇÃO E AUTO-SAVE BLINDADO
+            // ==========================================
+            let modoEdicao = false;
+
+            function toggleEdicaoGrade() {
+                const inputs = document.querySelectorAll('.grade-editavel');
+                const btn = document.getElementById('btn-editar-grade');
+
+                if (!modoEdicao) {
+                    // MODO EDIÇÃO: Destrava campos e muda cor
+                    inputs.forEach(inp => {
+                        inp.disabled = false;
+                        inp.classList.add('modo-edicao-ativo');
+                    });
+                    btn.innerHTML = '💾 SALVAR';
+                    btn.style.backgroundColor = '#e67e22';
+                    btn.style.color = '#fff';
+                    modoEdicao = true;
+                } else {
+                    // MODO SALVAR: Trava campos e limpa cor
+                    inputs.forEach(inp => {
+                        inp.disabled = true;
+                        inp.classList.remove('modo-edicao-ativo');
+
+                        // Passa os dados para a memória da janela mãe
+                        if (window.opener && window.opener.config && window.opener.config.grade) {
+                            const partes = inp.id.split('-');
+                            const campo = partes[1];
+                            const origIdx = parseInt(partes[2]);
+
+                            if (window.opener.config.grade[origIdx]) {
+                                window.opener.config.grade[origIdx][campo] = inp.value;
+                            }
+                        }
+                    });
+
+                    btn.innerHTML = '✏️ EDITAR';
+                    btn.style.backgroundColor = '#f1c40f';
+                    btn.style.color = '#1f2937';
+                    modoEdicao = false;
+
+                    // MÁGICA: Comunicação com a nuvem via janela mãe
+                    if (window.opener) {
+                        try {
+                            if (typeof window.opener.saveSystem === 'function') window.opener.saveSystem(); 
+                            if (typeof window.opener.renderConfig === 'function') window.opener.renderConfig();
+
+                            // Respiro para garantir o salvamento sem que o navegador trave o Firebase
+                            setTimeout(() => {
+                                alert("✅ Grade atualizada e salva na nuvem com sucesso!");
+                            }, 500);
+
+                        } catch (erro) {
+                            alert("⚠️ Houve um erro ao tentar salvar: " + erro.message);
+                        }
+                    } else {
+                        alert("⚠️ A janela do sistema foi fechada. Não foi possível salvar.");
+                    }
+                }
+            }
+        <\/script>
       </body>
     </html>
   `);
@@ -11441,6 +11610,38 @@ window.adminDeleteDate = async function(dateKey) {
 
 // --- GARANTIA EXTRA: Chama o render ao carregar para testar os botões
 setTimeout(renderAdminSpecialDays, 500);
+
+
+// BLOCO NOVO: FUNÇÃO PARA ALTERNAR ENTRE EDITAR E SALVAR
+function toggleEdicao(containerId, btnElement) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // 🚀 MUDANÇA AQUI: Só pega os inputs que têm a classe 'nota-editavel'
+    const inputs = container.querySelectorAll('input.nota-editavel');
+    if (inputs.length === 0) return;
+    
+    const estaTravado = inputs[0].disabled;
+
+    if (estaTravado) {
+        // MODO EDIÇÃO
+        inputs.forEach(input => input.disabled = false);
+        btnElement.innerHTML = "💾 SALVAR ALTERAÇÕES";
+        btnElement.style.backgroundColor = "#2ecc71"; // Verde
+        btnElement.style.color = "#fff";
+    } else {
+        // MODO SALVAR
+        if (typeof salvarNotas === "function") salvarNotas(); 
+        
+        // Trava tudo de novo
+        inputs.forEach(input => input.disabled = true);
+        btnElement.innerHTML = "✏️ EDITAR";
+        btnElement.style.backgroundColor = "#f1c40f"; // Amarelo
+        btnElement.style.color = "#1f2937";
+    }
+}
+
+
 </script>
 </body>
 </html>
