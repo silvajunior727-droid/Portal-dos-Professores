@@ -8413,6 +8413,32 @@ function saveGradeItem() {
   }, 150);
 }
 
+
+
+// 🟢 BLOCO NOVO: O "Porteiro" que recebe as edições do pop-up do Boletim/Grade
+function atualizarGradePeloPopUp(origIdx, campo, valor) {
+    try {
+        if (config && config.grade && config.grade[origIdx]) {
+            // Atualiza a memória
+            config.grade[origIdx][campo] = valor;
+            return true;
+        }
+        return false;
+    } catch (erro) {
+        console.error("Erro no porteiro:", erro);
+        return false;
+    }
+}
+
+// Essa função será chamada APÓS o pop-up enviar todas as alterações
+function finalizarSalvamentoPopUp() {
+    if (typeof saveSystem === 'function') saveSystem();
+    if (typeof renderConfig === 'function') renderConfig();
+}
+
+
+
+
 function deleteGradeItem(id) {
   if (!confirm('Apagar este horário?')) return;
 
@@ -10250,6 +10276,7 @@ function aplicarExclusaoConteudoProgramatico() {
   document.getElementById("print-modal").style.display = "none";
 }
 
+
 function printGradeReport() {
   if (!config || !config.grade) return alert("Nenhuma grade encontrada.");
 
@@ -10268,7 +10295,6 @@ function printGradeReport() {
 
   const daysOrder = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
   
-  // Ordenação Inicial Padrão
   list.sort((a, b) => {
       const diaDiff = daysOrder.indexOf(a.dia) - daysOrder.indexOf(b.dia);
       if (diaDiff !== 0) return diaDiff; 
@@ -10279,7 +10305,6 @@ function printGradeReport() {
       return a.hora.localeCompare(b.hora); 
   });
 
-  // Mapeamento das linhas com a Etiqueta Invisível (origIdx)
   const rows = list.map(g => {
     const origIdx = config.grade.indexOf(g);
     return `
@@ -10303,27 +10328,17 @@ function printGradeReport() {
         <title>Grade de Aulas</title>
         <style>
           body { font-family: Poppins, Arial, sans-serif; padding: 40px; color:#111; }
-          
-          .header-print {
-            display:flex; align-items:center; gap:16px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px; margin-bottom: 14px;
-          }
+          .header-print { display:flex; align-items:center; gap:16px; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 14px; }
           .header-print img { height: 60px; width:auto; object-fit:contain; }
           .header-text h2 { margin:0; font-size: 18px; text-transform: uppercase; }
           .header-text small { display:block; margin-top:3px; color:#444; }
-
           table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
-          
           th, td { border: 1px solid #000; padding: 6px 10px; text-align: left; }
           th { background: #f2f2f2; }
-
           .coluna-clicavel { cursor: pointer; user-select: none; transition: background 0.2s; position: relative; }
           .coluna-clicavel:hover { background: #e0e0e0; }
           .seta-ordem { font-size: 10px; margin-left: 5px; opacity: 0; color: #1a237e; }
-
           .modo-edicao-ativo { border: 1px dashed #e67e22 !important; background: #fff3e0 !important; outline: none; padding: 2px; }
-
           @media print {
             body { padding: 40px; } 
             .no-print { display:none !important; } 
@@ -10335,18 +10350,9 @@ function printGradeReport() {
       <body>
 
         <div class="topbar no-print" style="display:flex; justify-content:center; gap:20px; padding:15px; background:#f8f9fa; border-bottom:1px solid #eee; margin-bottom: 20px;">
-            <button onclick="window.close()" 
-                    style="width: 150px; height: 40px; background-color: #ffebee !important; color: #c62828 !important; border: 1px solid #ffcdd2 !important; box-shadow: 0px 4px 0px #ef5350 !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-               ✖ FECHAR
-            </button>
-            <button id="btn-editar-grade" onclick="toggleEdicaoGrade()" 
-                    style="width: 150px; height: 40px; background-color: #f1c40f !important; color: #1f2937 !important; border: 1px solid #e0b60e !important; box-shadow: 0px 4px 0px #d4ac0d !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">
-               ✏️ EDITAR
-            </button>
-            <button onclick="window.print()" 
-                    style="width: 150px; height: 40px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 4px 0px #26c6da !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-               🖨️ IMPRIMIR
-            </button>
+            <button onclick="window.close()" style="width: 150px; height: 40px; background-color: #ffebee !important; color: #c62828 !important; border: 1px solid #ffcdd2 !important; box-shadow: 0px 4px 0px #ef5350 !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">✖ FECHAR</button>
+            <button id="btn-editar-grade" onclick="toggleEdicaoGrade()" style="width: 150px; height: 40px; background-color: #f1c40f !important; color: #1f2937 !important; border: 1px solid #e0b60e !important; box-shadow: 0px 4px 0px #d4ac0d !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;">✏️ EDITAR</button>
+            <button onclick="window.print()" style="width: 150px; height: 40px; background-color: #e0f7fa !important; color: #006064 !important; border: 1px solid #b2ebf2 !important; box-shadow: 0px 4px 0px #26c6da !important; border-radius: 8px !important; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">🖨️ IMPRIMIR</button>
         </div>
 
         <div class="header-print">
@@ -10354,7 +10360,7 @@ function printGradeReport() {
           <div class="header-text">
             <h2>Cadastro das Aulas (Grade)</h2>
             <small>Gerado em: ${new Date().toLocaleDateString('pt-BR')}</small>
-            <small class="no-print" style="color:#d32f2f; font-weight:bold; margin-top:5px;">💡 Dica: Clique nos cabeçalhos da tabela para ordenar a lista!</small>
+            <small class="no-print" style="color:#d32f2f; font-weight:bold; margin-top:5px;">💡 Dica: Clique nos cabeçalhos para ordenar a lista!</small>
           </div>
         </div>
 
@@ -10372,9 +10378,6 @@ function printGradeReport() {
         </table>
 
         <script>
-            // ==========================================
-            // 1. LÓGICA DE ORDENAÇÃO
-            // ==========================================
             let colunaAtual = -1;
             let ordemCrescente = true;
 
@@ -10411,18 +10414,12 @@ function printGradeReport() {
                         const pesoB = pesosDias[valorB] || 99;
                         return ordemCrescente ? pesoA - pesoB : pesoB - pesoA;
                     }
-
-                    return ordemCrescente 
-                        ? valorA.localeCompare(valorB) 
-                        : valorB.localeCompare(valorA);
+                    return ordemCrescente ? valorA.localeCompare(valorB) : valorB.localeCompare(valorA);
                 });
 
                 linhas.forEach(linha => tbody.appendChild(linha));
             }
 
-            // ==========================================
-            // 2. LÓGICA DE EDIÇÃO E AUTO-SAVE BLINDADO
-            // ==========================================
             let modoEdicao = false;
 
             function toggleEdicaoGrade() {
@@ -10430,7 +10427,6 @@ function printGradeReport() {
                 const btn = document.getElementById('btn-editar-grade');
 
                 if (!modoEdicao) {
-                    // MODO EDIÇÃO: Destrava campos e muda cor
                     inputs.forEach(inp => {
                         inp.disabled = false;
                         inp.classList.add('modo-edicao-ativo');
@@ -10440,21 +10436,9 @@ function printGradeReport() {
                     btn.style.color = '#fff';
                     modoEdicao = true;
                 } else {
-                    // MODO SALVAR: Trava campos e limpa cor
                     inputs.forEach(inp => {
                         inp.disabled = true;
                         inp.classList.remove('modo-edicao-ativo');
-
-                        // Passa os dados para a memória da janela mãe
-                        if (window.opener && window.opener.config && window.opener.config.grade) {
-                            const partes = inp.id.split('-');
-                            const campo = partes[1];
-                            const origIdx = parseInt(partes[2]);
-
-                            if (window.opener.config.grade[origIdx]) {
-                                window.opener.config.grade[origIdx][campo] = inp.value;
-                            }
-                        }
                     });
 
                     btn.innerHTML = '✏️ EDITAR';
@@ -10462,22 +10446,30 @@ function printGradeReport() {
                     btn.style.color = '#1f2937';
                     modoEdicao = false;
 
-                    // MÁGICA: Comunicação com a nuvem via janela mãe
-                    if (window.opener) {
-                        try {
-                            if (typeof window.opener.saveSystem === 'function') window.opener.saveSystem(); 
-                            if (typeof window.opener.renderConfig === 'function') window.opener.renderConfig();
+                    // A MÁGICA: Falando com o Porteiro
+                    if (window.opener && typeof window.opener.atualizarGradePeloPopUp === 'function') {
+                        let comunicacaoOk = true;
 
-                            // Respiro para garantir o salvamento sem que o navegador trave o Firebase
-                            setTimeout(() => {
-                                alert("✅ Grade atualizada e salva na nuvem com sucesso!");
-                            }, 500);
+                        // 1. Manda todas as caixinhas uma por uma pro Porteiro
+                        inputs.forEach(inp => {
+                            const partes = inp.id.split('-');
+                            const campo = partes[1];
+                            const origIdx = parseInt(partes[2]);
+                            
+                            const salvou = window.opener.atualizarGradePeloPopUp(origIdx, campo, inp.value);
+                            if (!salvou) comunicacaoOk = false;
+                        });
 
-                        } catch (erro) {
-                            alert("⚠️ Houve um erro ao tentar salvar: " + erro.message);
+                        // 2. Se tudo deu certo, avisa pra tela principal salvar no Firebase
+                        if (comunicacaoOk) {
+                            window.opener.finalizarSalvamentoPopUp();
+                            alert("✅ Grade atualizada e salva na nuvem com sucesso!");
+                        } else {
+                            alert("⚠️ Erro: Não foi possível atualizar algumas linhas na memória principal.");
                         }
                     } else {
-                        alert("⚠️ A janela do sistema foi fechada. Não foi possível salvar.");
+                        // Se cair aqui, a comunicação entre as abas quebrou ou a tela principal foi fechada
+                        alert("❌ Falha crítica de comunicação! A tela principal foi recarregada ou perdeu a conexão com este pop-up. Feche e abra o boletim novamente.");
                     }
                 }
             }
@@ -10485,9 +10477,10 @@ function printGradeReport() {
       </body>
     </html>
   `);
-
   win.document.close();
 }
+
+
 
 </script>
 <div id="print-modal" class="modal"></div>
@@ -11603,7 +11596,7 @@ window.adminDeleteDate = async function(dateKey) {
             }
         }
     } catch (erro) {
-        alert("🚨 Erro crítico ao acessar o Firebase: " + erro.message);
+        alert("🚨 Erro crítico ao acessar o Firebase: " + erro.message);  
         console.error(erro);
     }
 };
