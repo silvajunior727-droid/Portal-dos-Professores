@@ -30,7 +30,7 @@ const rtdb = firebase.database();
 
 
 // ============================================================================
-// 🛡️ TRAVA DE SEGURANÇA CONTRA PERDA DE DADOS (V2 - MODO GLOBAL)
+// 🛡️ TRAVA DE SEGURANÇA CONTRA PERDA DE DADOS (V3.1 - MEGA GLOBAL)
 // ============================================================================
 let temAlteracoesNaoSalvas = false;
 
@@ -42,13 +42,18 @@ window.addEventListener('beforeunload', function (e) {
     }
 });
 
-document.addEventListener('input', function(event) {
-    if (event.target && event.target.id === 'txt-diary') {
-        temAlteracoesNaoSalvas = true;
-        console.log("Cão de guarda ativado! 🐕"); 
-    }
+// Vigia teclas digitadas (input) e cliques em caixinhas/números/menus (change)
+['input', 'change'].forEach(function(evento) {
+    document.addEventListener(evento, function(event) {
+        const campo = event.target;
+        // Se mexeu em qualquer Input, Textarea ou Menu Select da escola toda!
+        if (campo.tagName === 'TEXTAREA' || campo.tagName === 'INPUT' || campo.tagName === 'SELECT') {
+            temAlteracoesNaoSalvas = true;
+        }
+    });
 });
 // ============================================================================
+
 
 
 /* =================================================================================
@@ -6618,6 +6623,10 @@ try {
     } else {
         console.warn("⚠️ saveSystem não encontrado");
     }
+    
+    // 🐕 O CÃO DE GUARDA DORME AQUI! (Desliga o alarme pois os dados foram salvos)
+    temAlteracoesNaoSalvas = false; 
+
 } catch (error) {
     console.error("Erro ao salvar chamada:", error);
 }
