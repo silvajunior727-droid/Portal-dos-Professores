@@ -52,27 +52,16 @@ window.addEventListener('beforeunload', function (e) {
         }
     });
 });
-// ============================================================================
 
 
 
 /* =================================================================================
-   1️⃣ CONFIGURAÇÃO DA AGENDA (LIBERADA PARA TODOS OS DIAS - MODO FLEXÍVEL)
+   1️⃣ CONFIGURAÇÃO DA AGENDA (AGORA É 100% DINÂMICA VIA FIREBASE!)
    ================================================================================= */        
-var agendaAulas = {
-    "portugues": [1, 2, 3, 4, 5],
-    "matematica": [1, 2, 3, 4, 5],
-    "ciencias": [1, 2, 3, 4, 5],
-    "geografia": [1, 2, 3, 4, 5],                        
-    "educaçao fisica": [1, 2, 3, 4, 5],
-    "historia": [1, 2, 3, 4, 5],
-    "ingles": [1, 2, 3, 4, 5],
-    "ingles_1b": [1, 2, 3, 4, 5],
-    "arte": [1, 2, 3, 4, 5]
-};
+// 1. A variável agora nasce vazia e flexível. O Firebase é quem dita as regras.
+let agendaAulas = {}; 
 
-
-// 2. Função única de validação
+// 2. Função única de validação (Moderna e Conectada à Nuvem)
 function validarDiaAula() {
     const campoData = document.getElementById('data-aula');
     const campoMateria = document.getElementById('selMateriaChamada');
@@ -84,16 +73,21 @@ function validarDiaAula() {
     const diaSemana = dataSelecionada.getDay();
     const materia = campoMateria.value.toLowerCase(); // Converte para bater com a agenda
 
-    if (agendaAulas[materia]) {
-        if (!agendaAulas[materia].includes(diaSemana)) {
-            alert("⚠️ Atenção: Não há aula desta matéria neste dia da semana!");
+    // 🌟 A MÁGICA DA FASE 2: Puxa a grade oficial direto da nuvem!
+    // Se a gestão já salvou uma grade, ele usa a da nuvem. Se não, usa a vazia.
+    const gradeOficial = (typeof config !== 'undefined' && config.agendaAulas) ? config.agendaAulas : agendaAulas;
+
+    // Se a matéria existir na grade oficial configurada pela gestão
+    if (gradeOficial[materia]) {
+        // Se o dia da semana não estiver na lista de dias permitidos daquela matéria
+        if (!gradeOficial[materia].includes(diaSemana)) {
+            alert("⚠️ Atenção: Pela grade oficial, não há aula desta matéria neste dia da semana!");
             campoData.value = ""; // Limpa a data inválida
         }
     }
 }
 
 // 3. Aplica a validação de forma BLINDADA (Delegação de Eventos)
-// O sistema "ouve" a tela toda, mas só dispara a validação se o clique for exatamente nos campos certos
 document.addEventListener('change', function(e) {
     if (e.target && (e.target.id === 'data-aula' || e.target.id === 'selMateriaChamada')) {
         validarDiaAula();
@@ -6479,31 +6473,98 @@ function populateSubjectSelects() {
 
 var isAllSelected = false;
 
+
+
+
+// 🦎 FUNÇÃO AUXILIAR: O CAMALEÃO DOS COMBOS (REVISADA)
+function atualizarComboMaterias() {
+    const combo = document.getElementById('selMateriaChamada');
+    if (!combo) return;
+
+    // Identifica quem está logado
+    const nomeLogado = (currentUser && currentUser.displayName) ? currentUser.displayName.toLowerCase() : "";
+    const isDiretoria = nomeLogado.includes('júnior') || nomeLogado.includes('junior') || nomeLogado.includes('andressa') || nomeLogado.includes('sheila');
+    const isThaina = nomeLogado.includes('thainá') || nomeLogado.includes('thaina');
+    
+    // Identifica a turma atual (Ex: "1º Ano", "5º Ano")
+    const turmaAtual = currentClassContext ? currentClassContext.toUpperCase() : "";
+
+    // Guarda a matéria selecionada
+    const selecaoAnterior = combo.value;
+
+    // 1. Lista Base de Matérias
+    let materiasParaExibir = ["portugues", "matematica", "historia", "geografia", "ciencias", "arte", "ingles", "ingles_1b", "educaçao fisica"];
+    
+    // 2. APLICA AS REGRAS DE FILTRO
+    if (isDiretoria) {
+        // Diretoria vê tudo
+    } 
+    else if (isThaina) {
+        if (turmaAtual.includes("5º") || turmaAtual.includes("5O")) {
+            materiasParaExibir = materiasParaExibir.filter(m => !["ingles", "educaçao fisica", "edfisica"].includes(m));
+        } 
+        else if (turmaAtual.includes("1º") || turmaAtual.includes("1O")) {
+            materiasParaExibir = ["ingles_1b"];
+        }
+    } 
+    else {
+        // Demais Professores: Tudo MENOS os dois tipos de Inglês
+        materiasParaExibir = materiasParaExibir.filter(m => m !== "ingles" && m !== "ingles_1b");
+    }
+
+    // 3. MONTA O HTML
+    let comboHtml = `<option value="TODAS">--- TODAS AS MATÉRIAS ---</option>`;
+    materiasParaExibir.forEach(m => {
+        let nomeFormatado = m.replace("_", " ").toUpperCase();
+        if(m === "educaçao fisica") nomeFormatado = "ED. FÍSICA";
+        comboHtml += `<option value="${m}">${nomeFormatado}</option>`;
+    });
+
+    combo.innerHTML = comboHtml;
+    
+    // Tenta manter a seleção anterior
+    if (comboHtml.includes(`value="${selecaoAnterior}"`)) {
+        combo.value = selecaoAnterior;
+    } else {
+        combo.value = "TODAS";
+    }
+}
+
+// 🖼️ FUNÇÃO RENDERIZAR ATUALIZADA
 function renderAttend() {
-    const MateriaDoProfessorLogado = "MASTER"; 
+    // 🌟 1. FORÇA A ATUALIZAÇÃO DO COMBO LOGO NO INÍCIO
+    atualizarComboMaterias();
+
+    const combo = document.getElementById('selMateriaChamada');
+    const view = document.getElementById('view-attend');
+    const d = document.getElementById('date-attend')?.value;
+
+    if (!view || !d) return;
+
     const painelControle = document.getElementById('divSeletorMateria');
     const painelEspecialista = document.getElementById('divCheckEspecialistas');
 
-    if (MateriaDoProfessorLogado === "ED_FISICA") {
-        if(painelControle) painelControle.style.display = "none";
-        if(painelEspecialista) painelEspecialista.style.display = "none";
-    } else {
-        if(painelControle) painelControle.style.display = "block";
-        if(painelEspecialista) painelEspecialista.style.display = "block";
-    }
+    // Identificação para painéis
+    const nomeLogado = (currentUser && currentUser.displayName) ? currentUser.displayName.toLowerCase() : "";
+    const isDiretoria = nomeLogado.includes('júnior') || nomeLogado.includes('junior') || nomeLogado.includes('andressa') || nomeLogado.includes('sheila');
 
+    if (painelControle) painelControle.style.display = "block";
+    if (painelEspecialista) painelEspecialista.style.display = isDiretoria ? "block" : "none";
+
+    // Define qual campo de falta ler
     let campoFaltaParaLer = "faltas"; 
-    const combo = document.getElementById('selMateriaChamada');
     if (combo && combo.value !== "TODAS") {
         campoFaltaParaLer = "faltas_" + combo.value; 
     }
 
-    const d = document.getElementById('date-attend').value;
-    const tituloColuna = campoFaltaParaLer === "faltas" ? "GERAL" : campoFaltaParaLer.replace("faltas_", "").toUpperCase();
+    const tituloColuna = campoFaltaParaLer === "faltas" ? "GERAL" : campoFaltaParaLer.replace("faltas_", "").replace("_", " ").toUpperCase();
 
     let html = `<table><thead><tr><th style="text-align:left; padding-left:15px;">Nome do Aluno</th><th style="width:150px;">Presença (${tituloColuna})</th><th>Justificativa / Atestado</th></tr></thead><tbody>`;
     
-    if(!masterData[currentClassContext]) return;
+    if(!masterData[currentClassContext]) {
+        view.innerHTML = "<tr><td colspan='3'>Selecione uma turma válida.</td></tr>";
+        return;
+    }
 
     masterData[currentClassContext].forEach((std, i) => {
         const entry = (std.diary && std.diary[d]) || { faltas:0, just:'' };
@@ -6527,9 +6588,13 @@ function renderAttend() {
             </td>
         </tr>`;
     });
-    const view = document.getElementById('view-attend');
-    if(view) view.innerHTML = html + `</tbody></table>`;
+    view.innerHTML = html + `</tbody></table>`;
 }
+
+
+
+
+
 
 function markAllPresent() { 
     isAllSelected = !isAllSelected; 
@@ -6545,116 +6610,124 @@ function markAllPresent() {
 }
 
 function saveAttend() {
-  const d = document.getElementById('date-attend').value;
+    const d = document.getElementById('date-attend').value;
+    if (!d) return alert("⚠️ Escolha uma data no calendário!");
 
-  // --- 1. GRADE HORÁRIA ---
-  const gradeHoraria = {
-      "portugues":  [1, 2, 3, 4, 5],
-      "matematica": [1, 2, 3, 4, 5],
-      "historia":   [1, 2, 3, 4, 5],
-      "geografia":  [1, 2, 3, 4, 5],
-      "ciencias":   [1, 2, 3, 4, 5],
-      "arte":       [1, 2, 3, 4, 5],
-      "ingles":     [1, 2, 3, 4, 5],
-      "ingles_1b":  [1, 2, 3, 4, 5],
-      "edfisica":   [1, 2, 3, 4, 5]
-  };
+    // 🌟 1. PEGA A GRADE OFICIAL DIRETO DA NUVEM (Adeus código fixo!)
+    const gradeOficial = (typeof config !== 'undefined' && config.agendaAulas) ? config.agendaAulas : {};
 
-  if (!d) return alert("⚠️ Escolha uma data no calendário!");
-
-  // --- 2. VERIFICAÇÃO DE DIA LETIVO ---
-  if (typeof verificarDiaLetivo === "function") {
-      const checagem = verificarDiaLetivo(d);
-      if (!checagem.letivo) {
-          alert(`🚫 Bloqueado: ${checagem.motivo}.`);
-          return;
-      }
-  }
-
-  const chks = document.querySelectorAll('.inp-att-chk');
-  const justs = document.querySelectorAll('.inp-att-j');
-  const combo = document.getElementById('selMateriaChamada');
-  const materiaSelecionada = combo ? combo.value : "TODAS";
-  const chkEspecialista = document.getElementById('chkIncluirEspecialistas');
-  const incluirEspecialistas = chkEspecialista ? chkEspecialista.checked : false;
-
-  const dataObj = new Date(d + "T12:00:00");
-  const diaSemana = dataObj.getDay();
-
-  let materiasSalvas = [];
-  let chavesParaSalvar = [];
-
-  // --- 3. LÓGICA DE SELEÇÃO ---
-  if (materiaSelecionada === "TODAS") {
-      for (const [materia, dias] of Object.entries(gradeHoraria)) {
-          const isDiaCorreto = dias.includes(diaSemana);
-          const isEspecialista = (materia === "ingles" || materia === "edfisica" || materia === "ingles_1b");
-          
-          if (isEspecialista) {
-              if (incluirEspecialistas && isDiaCorreto) {
-                  materiasSalvas.push(materia.toUpperCase());
-                  chavesParaSalvar.push("faltas_" + materia);
-              }
-          } else if (isDiaCorreto) {
-              materiasSalvas.push(materia.toUpperCase());
-              chavesParaSalvar.push("faltas_" + materia);
-          }
-      }
-      materiasSalvas.unshift("GERAL");
-  } else {
-      materiasSalvas.push(materiaSelecionada.toUpperCase());
-      chavesParaSalvar.push("faltas_" + materiaSelecionada.toLowerCase());   
-  }
-
-// --- 4. GRAVAÇÃO NO MASTERDATA (COM REGRA DE JUSTIFICATIVA) ---
-chks.forEach((inp, i) => {
-  const idx = inp.dataset.idx;
-
-  if (!masterData[currentClassContext][idx].diary) {
-      masterData[currentClassContext][idx].diary = {};
-  }
-
-  if (!masterData[currentClassContext][idx].diary[d]) {
-      masterData[currentClassContext][idx].diary[d] = { faltas: 0, just: "" };
-  }
-
-  const justificativaTexto = justs[i].value.trim();
-  const alunoPresente = inp.checked;
-
-  const faltaValor = (alunoPresente || justificativaTexto !== "") ? 0 : 1;
-
-  masterData[currentClassContext][idx].diary[d].just = justificativaTexto;
-
-  if (materiaSelecionada === "TODAS") {
-      masterData[currentClassContext][idx].diary[d].faltas = faltaValor;
-
-      chavesParaSalvar.forEach(campo => {
-          masterData[currentClassContext][idx].diary[d][campo] = faltaValor;
-      });
-
-  } else {
-      masterData[currentClassContext][idx].diary[d][chavesParaSalvar[0]] = faltaValor;
-  }
-});
-
-// --- 5. SINCRONIZAÇÃO NUVEM (MANTIDA - NÃO ALTERAR) ---
-try {
-    if (typeof saveSystem === 'function') {
-        saveSystem();
-    } else {
-        console.warn("⚠️ saveSystem não encontrado");
+    // --- 2. VERIFICAÇÃO DE DIA LETIVO ---
+    if (typeof verificarDiaLetivo === "function") {
+        const checagem = verificarDiaLetivo(d);
+        if (!checagem.letivo) {
+            alert(`🚫 Bloqueado: ${checagem.motivo}.`);
+            return;
+        }
     }
+
+    const chks = document.querySelectorAll('.inp-att-chk');
+    const justs = document.querySelectorAll('.inp-att-j');
+    const combo = document.getElementById('selMateriaChamada');
+    const materiaSelecionada = combo ? combo.value : "TODAS";
+    const chkEspecialista = document.getElementById('chkIncluirEspecialistas');
+    const incluirEspecialistas = chkEspecialista ? chkEspecialista.checked : false;
+
+    const dataObj = new Date(d + "T12:00:00");
+    const diaSemana = dataObj.getDay();
+
+    // 🌟 3. TRAVA DE DIA ERRADO (Valida com a Grade Oficial da nuvem)
+    if (materiaSelecionada !== "TODAS") {
+        const materiaFormatada = materiaSelecionada.toLowerCase();
+        // Se a matéria existe na nuvem, mas o dia de hoje não está na lista dela:
+        if (gradeOficial[materiaFormatada] && !gradeOficial[materiaFormatada].includes(diaSemana)) {
+            alert(`❌ AÇÃO BLOQUEADA!\nNão há aula de ${materiaSelecionada.toUpperCase()} neste dia da semana de acordo com a Grade Oficial do Colégio.`);
+            return; // Barrado! Não deixa salvar!
+        }
+    }
+
+    // 🌟 4. A CONFIRMAÇÃO DE SEGURANÇA (A cereja do bolo para evitar erros!)
+    const msgConfirmacao = materiaSelecionada === "TODAS" 
+        ? "Você está prestes a salvar a chamada para TODAS AS MATÉRIAS do dia. Tem certeza?" 
+        : `Você selecionou a matéria de ${materiaSelecionada.toUpperCase()}.\n\nTem certeza de que está salvando na matéria CORRETA?`;
     
-    // 🐕 O CÃO DE GUARDA DORME AQUI! (Desliga o alarme pois os dados foram salvos)
-    temAlteracoesNaoSalvas = false; 
+    if (!confirm("⚠️ CONFIRMAÇÃO DE CHAMADA\n\n" + msgConfirmacao)) {
+        return; // Se o professor clicar em "Cancelar", a função para aqui e ele não perde nada!
+    }
 
-} catch (error) {
-    console.error("Erro ao salvar chamada:", error);
-}
+    let materiasSalvas = [];
+    let chavesParaSalvar = [];
 
-alert("✅ Chamada de " + materiasSalvas.join(", ") + " salva e sincronizada!");
-renderAttend();
+    // --- 5. LÓGICA DE SELEÇÃO (Agora 100% dinâmica) ---
+    if (materiaSelecionada === "TODAS") {
+        const listaMaterias = Object.keys(gradeOficial).length > 0 ? Object.keys(gradeOficial) : ["portugues", "matematica", "historia", "geografia", "ciencias", "arte", "ingles", "ingles_1b", "educaçao fisica"];
+        
+        for (const materia of listaMaterias) {
+            const dias = gradeOficial[materia] || [];
+            const isDiaCorreto = dias.includes(diaSemana);
+            const isEspecialista = (materia === "ingles" || materia === "educaçao fisica" || materia === "ingles_1b" || materia === "edfisica");
+            
+            if (isEspecialista) {
+                if (incluirEspecialistas && isDiaCorreto) {
+                    materiasSalvas.push(materia.toUpperCase());
+                    chavesParaSalvar.push("faltas_" + materia);
+                }
+            } else if (isDiaCorreto) {
+                materiasSalvas.push(materia.toUpperCase());
+                chavesParaSalvar.push("faltas_" + materia);
+            }
+        }
+        materiasSalvas.unshift("GERAL");
+    } else {
+        materiasSalvas.push(materiaSelecionada.toUpperCase());
+        chavesParaSalvar.push("faltas_" + materiaSelecionada.toLowerCase());   
+    }
 
+    // --- 6. GRAVAÇÃO NO MASTERDATA ---
+    chks.forEach((inp, i) => {
+        const idx = inp.dataset.idx;
+
+        if (!masterData[currentClassContext][idx].diary) {
+            masterData[currentClassContext][idx].diary = {};
+        }
+
+        if (!masterData[currentClassContext][idx].diary[d]) {
+            masterData[currentClassContext][idx].diary[d] = { faltas: 0, just: "" };
+        }
+
+        const justificativaTexto = justs[i].value.trim();
+        const alunoPresente = inp.checked;
+
+        const faltaValor = (alunoPresente || justificativaTexto !== "") ? 0 : 1;
+
+        masterData[currentClassContext][idx].diary[d].just = justificativaTexto;
+
+        if (materiaSelecionada === "TODAS") {
+            masterData[currentClassContext][idx].diary[d].faltas = faltaValor;
+
+            chavesParaSalvar.forEach(campo => {
+                masterData[currentClassContext][idx].diary[d][campo] = faltaValor;
+            });
+
+        } else {
+            masterData[currentClassContext][idx].diary[d][chavesParaSalvar[0]] = faltaValor;
+        }
+    });
+
+    // --- 7. SINCRONIZAÇÃO NUVEM ---
+    try {
+        if (typeof saveSystem === 'function') {
+            saveSystem();
+        }
+        
+        // 🐕 O CÃO DE GUARDA DORME AQUI!
+        temAlteracoesNaoSalvas = false; 
+
+    } catch (error) {
+        console.error("Erro ao salvar chamada:", error);
+    }
+
+    alert("✅ Chamada de " + materiasSalvas.join(", ") + " salva com sucesso!");
+    if (typeof renderAttend === 'function') renderAttend();
 }
 
 
@@ -8040,7 +8113,9 @@ function imprimirCalendario() {
 }
 
 
-// 1. FUNÇÃO SAIR (FECHAR)
+// ==========================================
+// 1. FUNÇÃO SAIR (FECHAR MODAL DO CALENDÁRIO)
+// ==========================================
 function fecharModal() {
     // 🛡️ O botão "Sair" checa com o Cão de Guarda antes de fechar!
     if (temAlteracoesNaoSalvas) {
@@ -8052,9 +8127,10 @@ function fecharModal() {
 
     const modal = document.getElementById('modalEventoCalendario');
     if (modal) modal.style.display = 'none';
-    if (typeof resetarFormEvento === 'function') resetarFormEvento(); // Verificação de segurança
     
-    // Limpa os campos ao sair para não lixo na próxima abertura
+    if (typeof resetarFormEvento === 'function') resetarFormEvento(); 
+    
+    // Limpa os campos ao sair
     const tituloInput = document.getElementById('modalTituloInput');
     const descInput = document.getElementById('modalDescInput');
     const indexInput = document.getElementById('editIndex');
@@ -8063,7 +8139,7 @@ function fecharModal() {
     if(descInput) descInput.value = '';
     if(indexInput) indexInput.value = "-1";
 
-    // 🐕 O CÃO DE GUARDA DORME AQUI! (Pois a ação foi cancelada pelo usuário)
+    // 🐕 O CÃO DE GUARDA DORME AQUI! (Janela fechada, perigo passou)
     temAlteracoesNaoSalvas = false;
 }
 
@@ -8948,14 +9024,6 @@ function toggleTicker() {
     ticker.style.animationPlayState = (ticker.style.animationPlayState === 'paused') ? 'running' : 'paused';
 }
 
-// Resolve: fecharModal funcional com limpeza
-function fecharModal() {
-    const modal = document.getElementById('modalEventoCalendario');
-    if (modal) {
-        modal.style.display = 'none';
-        resetarFormEvento();
-    }
-}
 
 // ============================================================
 // 1. CONFIGURAÇÕES GLOBAIS E UTILITÁRIOS
@@ -9256,10 +9324,20 @@ async function salvarEventoPeloCalendario() {
             return res;
         }
 
-        function warnIfBlocked(dateKey) {
+function warnIfBlocked(dateKey) {
             const info = getBlockInfo(dateKey);
-            if (info.blocked) {
-                alert(`ATENÇÃO: ${dateKey} está bloqueada (${info.reason})`);
+            if (!info.blocked) return false;
+
+            // CHECAGEM DE USUÁRIO (GESTÃO)
+            const nome = (currentUser && currentUser.displayName) ? currentUser.displayName.toLowerCase() : "";
+            const isGestao = nome.includes('júnior') || nome.includes('junior') || nome.includes('andressa') || nome.includes('sheila');
+
+            if (isGestao) {
+                alert(`⚠️ ATENÇÃO: A data (${dateKey}) está BLOQUEADA (${info.reason}).\n\nComo você é da GESTÃO, o agendamento no Calendário foi PERMITIDO.`);
+                return false; // False = NÃO barra o salvamento
+            } else {
+                alert(`❌ AÇÃO BLOQUEADA: A data ${dateKey} não é letiva ou está bloqueada.\nMotivo: ${info.reason}\n\nPor favor, peça ajuda à Coordenação/Direção se precisar agendar algo neste dia.`);
+                return true; // True = BARRA o salvamento
             }
         }
 
@@ -9271,7 +9349,8 @@ async function salvarEventoPeloCalendario() {
             while (atual <= limite) {
                 const dataIso = atual.toISOString().split('T')[0];
 
-                warnIfBlocked(dataIso);
+                // Se a função retornar true (professor), interrompe o salvamento na hora!
+                if (warnIfBlocked(dataIso)) return;
 
                 if (!eventos.some(e => e.date === dataIso && e.title === titulo)) {
                     eventos.push({ date: dataIso, title: titulo, description: desc, color: cor });
@@ -9280,10 +9359,12 @@ async function salvarEventoPeloCalendario() {
                 atual.setDate(atual.getDate() + 1);
             }
         } else {
-            warnIfBlocked(dataInicio);
+            // Se a função retornar true (professor), interrompe o salvamento na hora!
+            if (warnIfBlocked(dataInicio)) return;
 
             eventos.push({ date: dataInicio, title: titulo, description: desc, color: cor }); 
         }
+		
 
         // 🔥 ATUALIZA TUDO CORRETAMENTE
         config.calendarEvents = eventos;
@@ -9404,8 +9485,18 @@ async function salvarEventoPeloCalendario() {
 }
 
 
-// 3. FUNÇÃO EXCLUIR COM AVISO (PODE EXCLUIR MESMO BLOQUEADO)
+// 3. FUNÇÃO EXCLUIR COM AVISO E BLOQUEIO DE SEGURANÇA
 function excluirEvento(data, titulo) {
+    // 🔒 1º PASSO: CHECAGEM DE CRachá (APENAS GESTÃO PODE EXCLUIR)
+    const nome = (currentUser && currentUser.displayName) ? currentUser.displayName.toLowerCase() : "";
+    const isGestao = nome.includes('júnior') || nome.includes('junior') || nome.includes('andressa') || nome.includes('sheila');
+
+    if (!isGestao) {
+        alert(`❌ AÇÃO BLOQUEADA!\n\nApenas a Coordenação/Direção tem permissão para excluir eventos do calendário escolar. Se precisar apagar algo, peça ajuda a eles.`);
+        return; // Barrado! A função para aqui e não exclui nada.
+    }
+
+    // 2º PASSO: SE FOR DA GESTÃO, SEGUE O FLUXO NORMAL
     if (!confirm(`Deseja excluir "${titulo}"?\n\n⚠️ Atenção: Se este evento fizer parte de um período (vários dias), TODOS os dias com esse mesmo nome serão apagados de uma só vez!`)) return;
 
     let eventos = [];
@@ -9431,10 +9522,6 @@ function excluirEvento(data, titulo) {
 
     renderCalendarioAnual();
     renderEventTicker();
-}
-function fecharModal() { 
-    const modal = document.getElementById('modalEventoCalendario');
-    if(modal) modal.style.display = 'none'; 
 }
 
 function mudarAnoCalendario(valor) { 
@@ -11511,6 +11598,153 @@ function toggleEdicao(containerId, btnElement) {
 }
 
 
+
+/* =================================================================================
+   ⚙️ LÓGICA DO PAINEL SECRETO DA GESTÃO (GRADE HORÁRIA DINÂMICA)
+   ================================================================================= */
+
+// 1. Função que esconde/mostra o botão mágico consoante quem faz o login
+function verificarPermissaoGrade() {
+    const btnGrade = document.getElementById('btn-config-grade');
+    if (!btnGrade) return;
+
+    const nome = (currentUser && currentUser.displayName) ? currentUser.displayName.toLowerCase() : "";
+    const isGestao = nome.includes('júnior') || nome.includes('junior') || nome.includes('andressa') || nome.includes('sheila');
+
+    if (isGestao) {
+        btnGrade.style.display = 'block'; // Mostra o botão para a Gestão
+    } else {
+        btnGrade.style.display = 'none';  // Esconde do resto do mundo
+    }
+}
+
+// O sistema verifica as permissões a cada 3 segundos para garantir que apanha o login
+setInterval(verificarPermissaoGrade, 3000);
+
+// 2. Abrir e Fechar a Janela (Modal)
+function abrirModalGrade() {
+    document.getElementById('modalConfigGrade').style.display = 'flex';
+    carregarDiasDaMateria(); // Já carrega os dias da primeira matéria (Português)
+}
+
+function fecharModalGrade() {
+    // 🛡️ O botão "Sair" checa com o Cão de Guarda antes de fechar!
+    if (temAlteracoesNaoSalvas) {
+        const querSair = confirm("⚠️ Você tem alterações na Grade não salvas! Tem certeza que deseja sair?");
+        if (!querSair) {
+            return; // Se clicar em Cancelar, a janela não fecha!
+        }
+    }
+
+    document.getElementById('modalConfigGrade').style.display = 'none';
+    
+    // 🐕 O CÃO DE GUARDA DORME AQUI! (Pois a gestão fechou a janela)
+    temAlteracoesNaoSalvas = false;
+}
+
+// 3. Lê o Firebase e preenche as caixinhas certas
+function carregarDiasDaMateria() {
+    const materia = document.getElementById('gradeMateriaSel').value;
+    const checkboxes = document.querySelectorAll('.chk-grade-dia');
+    
+    // Primeiro, limpa todas as caixinhas
+    checkboxes.forEach(chk => chk.checked = false);
+
+    // Depois, vai à nuvem ver quais dias estão salvos para esta matéria
+    if (typeof config !== 'undefined' && config.agendaAulas && config.agendaAulas[materia]) {
+        const diasSalvos = config.agendaAulas[materia];
+        checkboxes.forEach(chk => {
+            // Se o dia da caixinha (ex: 2 para Terça) estiver na lista da nuvem, marca com certinho
+            if (diasSalvos.includes(parseInt(chk.value))) {
+                chk.checked = true;
+            }
+        });
+    }
+}
+
+// 4. Salva a nova grade no Firebase (O superpoder da Gestão!)
+function salvarGradeMateria() {
+    const materia = document.getElementById('gradeMateriaSel').value;
+    const checkboxes = document.querySelectorAll('.chk-grade-dia');
+    
+    let diasEscolhidos = [];
+    
+    // Recolhe todas as caixinhas que a Diretoria marcou
+    checkboxes.forEach(chk => {
+        if (chk.checked) {
+            diasEscolhidos.push(parseInt(chk.value));
+        }
+    });
+
+    // Se a gaveta da agenda ainda não existir na nuvem, cria-a
+    if (typeof config === 'undefined') window.config = {};
+    if (!config.agendaAulas) config.agendaAulas = {};
+
+    // Atualiza a matéria com os dias novos
+    config.agendaAulas[materia] = diasEscolhidos;
+
+    // Envia tudo para o Firebase!
+    if (typeof saveSystem === 'function') {
+        saveSystem();
+    }
+
+    // 🐕 O CÃO DE GUARDA DORME AQUI! (Porque acabámos de salvar)
+    temAlteracoesNaoSalvas = false;
+
+    alert(`✅ Dias de aula para ${materia.toUpperCase()} atualizados com sucesso na Nuvem!`);
+}
+
+
+
 </script>
+
+
+<button id="btn-config-grade" onclick="abrirModalGrade()" style="display:none; position:fixed; bottom:20px; right:20px; background:#1565c0; color:#fff; border:none; padding:12px 20px; border-radius:50px; font-weight:bold; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.3); z-index:9000; transition: 0.2s;">
+    ⚙️ Configurar Grade Escolar
+</button>
+
+<div id="modalConfigGrade" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center; backdrop-filter: blur(3px);">
+    <div style="background:#fff; width:90%; max-width:450px; border-radius:12px; padding:25px; box-shadow:0 15px 30px rgba(0,0,0,0.3);">
+        
+        <h2 style="margin-top:0; color:#0d47a1; font-size:20px; border-bottom:2px solid #e3f2fd; padding-bottom:10px; display:flex; align-items:center; gap:8px;">
+            <span>📅</span> Grade Oficial do Colégio
+        </h2>
+
+        <div style="margin-top:15px;">
+            <label style="font-weight:bold; font-size:14px; color:#424242;">1. Selecione a Disciplina:</label>
+            <select id="gradeMateriaSel" onchange="carregarDiasDaMateria()" style="width:100%; padding:12px; margin-top:8px; border:2px solid #e0e0e0; border-radius:8px; font-size:15px; outline:none; cursor:pointer;">
+                <option value="portugues">Língua Portuguesa</option>
+                <option value="matematica">Matemática</option>
+                <option value="ciencias">Ciências</option>
+                <option value="geografia">Geografia</option>
+                <option value="historia">História</option>
+                <option value="arte">Arte</option>
+                <option value="ingles">Inglês</option>
+                <option value="ingles_1b">Inglês 1B</option>
+                <option value="educaçao fisica">Educação Física</option>
+            </select>
+        </div>
+
+        <div style="margin-top:20px;">
+            <label style="font-weight:bold; font-size:14px; color:#424242;">2. Em quais dias essa matéria tem aula?</label>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px; background:#f5f5f5; padding:15px; border-radius:8px; border:1px solid #eeeeee;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:15px;"><input type="checkbox" value="1" class="chk-grade-dia" style="width:18px; height:18px; cursor:pointer;"> Segunda-feira</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:15px;"><input type="checkbox" value="2" class="chk-grade-dia" style="width:18px; height:18px; cursor:pointer;"> Terça-feira</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:15px;"><input type="checkbox" value="3" class="chk-grade-dia" style="width:18px; height:18px; cursor:pointer;"> Quarta-feira</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:15px;"><input type="checkbox" value="4" class="chk-grade-dia" style="width:18px; height:18px; cursor:pointer;"> Quinta-feira</label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:8px; font-size:15px;"><input type="checkbox" value="5" class="chk-grade-dia" style="width:18px; height:18px; cursor:pointer;"> Sexta-feira</label>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:15px; margin-top:30px;">
+            <button onclick="fecharModalGrade()" style="flex:1; height:42px; background:#ffebee; color:#c62828; border:1px solid #ffcdd2; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px;">Sair</button>
+            <button onclick="salvarGradeMateria()" style="flex:2; height:42px; background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; box-shadow:0px 4px 0px #66bb6a; border-radius:8px; font-weight:bold; cursor:pointer; font-size:14px; transition:0.1s;" onmousedown="this.style.boxShadow='0px 2px 0px #66bb6a'; this.style.transform='translateY(2px)'" onmouseup="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'" onmouseleave="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'">💾 Salvar Dias</button>
+        </div>
+        
+    </div>
+</div>
+
+
+
 </body>
 </html>
