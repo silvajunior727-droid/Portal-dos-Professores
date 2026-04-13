@@ -5689,6 +5689,7 @@ function renderAdmin() {
             </div>
         </div>
     </div>`;
+	
     loadAdminData();
 }
 
@@ -5765,6 +5766,10 @@ function admSaveWeights() {
     mediaConfig[cls][subj][bim] = {components:comps};
     
     saveSystem();
+    
+    // 🐕 O CÃO DE GUARDA DORME AQUI! (Dados salvos com sucesso)
+    temAlteracoesNaoSalvas = false;
+
     alert('✅ Pesos de ' + subj + ' salvos com sucesso!');
 }
 
