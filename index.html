@@ -1638,7 +1638,7 @@ window.CLASSES_ALL = window.CLASSESLIST;
     </div>
     
     <div id="campoDataFim" style="display: none;">
-        <label style="font-size: 0.8em; font-weight: bold;">Data de Término (Férias/Recesso):</label>
+        <label style="font-size: 0.8em; font-weight: bold;">Data de Término:</label>
         <input type="date" id="modalDataFim" style="width: 100%; padding: 8px;">
     </div>
 
@@ -5009,6 +5009,9 @@ function saveMyProfile() {
         localStorage.setItem('gp_v9_users', JSON.stringify(users));
         currentUser = users[meuEmailKey];
 
+        // 🐕 O CÃO DE GUARDA DORME AQUI! (Perfil salvo)
+        temAlteracoesNaoSalvas = false;
+
         alert('✅ Perfil atualizado com sucesso!\nO Admin ainda pode gerenciar sua conta normalmente.');
         renderConfig(); // Recarrega a tela para mostrar o novo nome no topo
     } else {
@@ -8039,6 +8042,14 @@ function imprimirCalendario() {
 
 // 1. FUNÇÃO SAIR (FECHAR)
 function fecharModal() {
+    // 🛡️ O botão "Sair" checa com o Cão de Guarda antes de fechar!
+    if (temAlteracoesNaoSalvas) {
+        const querSair = confirm("⚠️ Você tem alterações não salvas! Tem certeza que deseja fechar sem salvar?");
+        if (!querSair) {
+            return; // Se ele clicar em Cancelar, para tudo e a janela não fecha!
+        }
+    }
+
     const modal = document.getElementById('modalEventoCalendario');
     if (modal) modal.style.display = 'none';
     if (typeof resetarFormEvento === 'function') resetarFormEvento(); // Verificação de segurança
@@ -8051,6 +8062,9 @@ function fecharModal() {
     if(tituloInput) tituloInput.value = '';
     if(descInput) descInput.value = '';
     if(indexInput) indexInput.value = "-1";
+
+    // 🐕 O CÃO DE GUARDA DORME AQUI! (Pois a ação foi cancelada pelo usuário)
+    temAlteracoesNaoSalvas = false;
 }
 
 
