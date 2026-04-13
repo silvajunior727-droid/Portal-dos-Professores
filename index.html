@@ -6,8 +6,8 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>                 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
-<!-- 🔥 ADICIONADO: Realtime Database (necessário para sincronização instantânea) -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script> 
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>  
+
 
 <script>
   const firebaseConfig = {
@@ -29,11 +29,31 @@ const db = firebase.firestore();
 const rtdb = firebase.database();
 
 
+// ============================================================================
+// 🛡️ TRAVA DE SEGURANÇA CONTRA PERDA DE DADOS (V2 - MODO GLOBAL)
+// ============================================================================
+let temAlteracoesNaoSalvas = false;
+
+window.addEventListener('beforeunload', function (e) {
+    if (temAlteracoesNaoSalvas) {
+        e.preventDefault();
+        e.returnValue = ''; 
+        return '';
+    }
+});
+
+document.addEventListener('input', function(event) {
+    if (event.target && event.target.id === 'txt-diary') {
+        temAlteracoesNaoSalvas = true;
+        console.log("Cão de guarda ativado! 🐕"); 
+    }
+});
+// ============================================================================
 
 
 /* =================================================================================
    1️⃣ CONFIGURAÇÃO DA AGENDA (LIBERADA PARA TODOS OS DIAS - MODO FLEXÍVEL)
-   ================================================================================= */       
+   ================================================================================= */        
 var agendaAulas = {
     "portugues": [1, 2, 3, 4, 5],
     "matematica": [1, 2, 3, 4, 5],
@@ -45,6 +65,7 @@ var agendaAulas = {
     "ingles_1b": [1, 2, 3, 4, 5],
     "arte": [1, 2, 3, 4, 5]
 };
+
 
 // 2. Função única de validação
 function validarDiaAula() {
@@ -1653,22 +1674,24 @@ window.CLASSES_ALL = window.CLASSESLIST;
 
 </div>
 
-       <div style="display:flex; gap:15px; margin-top: 10px;">
+<div style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-top: 20px;">
     
     <button class="main-button" onclick="fecharModal()" 
-            style="flex:1; height:42px; 
+            style="margin: 0 0 0 auto !important; display: inline-flex !important; flex: none !important; width: 120px !important; height: 42px !important; 
                    background-color: #ffebee !important; 
                    color: #c62828 !important; 
                    border: 1px solid #ffcdd2 !important; 
                    box-shadow: 0px 4px 0px #ef5350 !important; 
                    border-radius: 8px !important; 
                    font-weight: bold; cursor: pointer; 
-                   transition: 0.1s; display:flex; align-items:center; justify-content:center; gap:6px;"
+                   transition: 0.1s; align-items: center; justify-content: center; gap: 6px;"
             onmousedown="this.style.boxShadow='0px 2px 0px #ef5350'; this.style.transform='translateY(2px)'"
             onmouseup="this.style.boxShadow='0px 4px 0px #ef5350'; this.style.transform='translateY(0)'"
             onmouseleave="this.style.boxShadow='0px 4px 0px #ef5350'; this.style.transform='translateY(0)'">
         ⏻ Sair
     </button>
+    
+</div>
 
     <button class="main-button" onclick="salvarEventoPeloCalendario()" 
             style="flex:1; height:42px; 
@@ -2679,46 +2702,37 @@ function renderHome() {
                 </div>
                 
 <div style="display: flex; gap: 10px; align-items: center;">
-    <button class="header-btn" 
-            style="
-                background-color: #ededed !important; 
-                color: #333 !important; 
-                border: 1px solid #d1d1d1 !important; 
-                box-shadow: 0px 4px 0px #bdbdbd !important; 
-                border-radius: 6px !important; 
-                font-weight: bold !important; 
-                height: 35px; 
-                padding: 0 15px;
-                cursor: pointer;
-                display: flex; align-items: center; justify-content: center; gap: 6px;
-                transition: none;
-            " 
-            onclick="logout()">
-        <span style="font-size: 1.1em;">⏻</span> Sair
-    </button>
+    <button class="header-btn" 
+            style="
+                background-color: #ededed !important; 
+                color: #333 !important; 
+                border: 1px solid #d1d1d1 !important; 
+                box-shadow: 0px 4px 0px #bdbdbd !important; 
+                border-radius: 6px !important; 
+                font-weight: bold !important; 
+                height: 35px; 
+                padding: 0 15px;
+                cursor: pointer;
+                display: flex; align-items: center; justify-content: center; gap: 6px;
+                transition: none;
+            " 
+            onclick="logout()">
+        <span style="font-size: 1.1em;">⏻</span> Sair
+    </button>
 </div>
-            </div>
-            
-            ${slideshowHTML}
+            </div>
+            
+            ${slideshowHTML}
 
-            ${typeof verificarFimBimestre === 'function' ? verificarFimBimestre() : ''}
-            ${typeof verificarChamadasAtrasadas === 'function' ? verificarChamadasAtrasadas() : ''}
+            ${typeof verificarFimBimestre === 'function' ? verificarFimBimestre() : ''}
+            ${typeof verificarChamadasAtrasadas === 'function' ? verificarChamadasAtrasadas() : ''}
 
-            <div class="card">
-                <div id="eventTicker"></div>
-                
+            <div class="card">
+                <div id="eventTicker"></div>
+                
 <div style="display: flex; justify-content: space-between; align-items: center; margin-top:20px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                    <h3 style="margin: 0;">Minhas Turmas</h3>
-                    ${(currentUser.displayName.includes('Júnior') || currentUser.displayName.includes('Junior') || currentUser.email === 'junior@gp' || currentUser.id === 'junior@gp') ? `
-                    <button onclick="abrirModoDeus()" 
-                            style="background: linear-gradient(135deg, #ffe0b2, #ffcc80); color: #d84315; border: 1px solid #ffb74d; padding: 7px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2), 0 3px 0px #fb8c00; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; letter-spacing: 0.3px;"
-                            onmousedown="this.style.transform='translateY(3px)'; this.style.boxShadow='0 2px 5px rgba(255, 152, 0, 0.2), 0 0px 0px #fb8c00';"
-                            onmouseup="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 152, 0, 0.2), 0 3px 0px #fb8c00';"
-                            onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(255, 152, 0, 0.2), 0 3px 0px #fb8c00';">
-                        <span style="font-size: 1.2em;">👁️</span> Ver Todas as Turmas
-                    </button>
-                    ` : ''}
-                </div>
+                    <h3 style="margin: 0;">Minhas Turmas</h3>
+                </div>
 
 
 <div id="grid-turmas-container" style="margin-bottom: 20px;">
@@ -3705,30 +3719,8 @@ slideshowSection = `
 // --- 4. ÁREA ADMINISTRATIVA SINCRONIZADA ---
 let adminResetSection = ''; 
 if (['Júnior', 'Sheila', 'Andressa'].some(name => currentUser.displayName && currentUser.displayName.includes(name))) {
-            
-    let userOpts = ''; 
-    for (let email in users) { 
-        let status = users[email].blocked ? ' [🚫 BLOQUEADO]' : ''; 
-        userOpts += `<option value="${email}">${users[email].displayName} (${email})${status}</option>`; 
-    }
 
     adminResetSection = `
-    <div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px;">
-        <h4 style="color:#d35400;">⚡/🔄 Admin - Reset de Senha!</h4>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <select id="admin-user-reset" class="input-admin" style="width: 510px !important;">\${userOpts}</select>
-            <button class="main-button" style="width:50px; height:40px; background-color: #ededed !important; color: #333 !important; border: 1px solid #d1d1d1 !important; box-shadow: 0px 4px 0px #bdbdbd !important; border-radius: 6px !important; display:flex; align-items:center; justify-content:center;" onclick="adminResetUser()">⚙️</button>
-        </div>
-    </div>
-
-    <div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px; background: #fff0f0; padding:10px; border-radius:8px;">
-        <h4 style="color:#c0392b; margin-top:0;">🔒/🔓 Bloquear / Desbloquear Professor!</h4>
-        <div style="display:flex; gap:10px; align-items:center;">
-            <select id="admin-user-block" class="input-admin" style="width: 500px !important;">\${userOpts}</select>
-            <button class="main-button" style="width:50px; height:40px; background-color: #ffe0d6 !important; color: #bf360c !important; border: 1px solid #ffccbc !important; box-shadow: 0px 4px 0px #ffab91 !important; border-radius: 6px !important; display:flex; align-items:center; justify-content:center;" onclick="adminToggleBlock()">⚙️</button>
-        </div>
-    </div>
-
     <div style="margin-top:20px; border-top:2px solid #ddd; padding-top:10px; background: #e3f2fd; padding:10px; border-radius:8px;">
         <h4 style="color:#0d47a1; margin-top:0;">📅 Gestão de Datas e Letreiro!</h4>
         <div style="display:flex; gap:10px; align-items:center; margin-bottom:15px;">
@@ -3741,88 +3733,109 @@ if (['Júnior', 'Sheila', 'Andressa'].some(name => currentUser.displayName && cu
     </div>
     `;
     if(typeof renderAdminSpecialDays === 'function') setTimeout(renderAdminSpecialDays, 200);
-        }
     }
+} // <--- OLHA A CHAVE QUE EU TINHA ESQUECIDO AQUI!
 
-   // --- 5. LÓGICA DA GRADE (A NOVA QUE VOCÊ GOSTOU) ---
-    let formGradeHTML = '';
-    if (isSpecialist) {
-        formGradeHTML = `
-            <div style="background:#f3e5f5; padding:10px; border-radius:8px; border:1px solid #e1bee7; margin-bottom:10px;">
-                <p style="font-size:0.8em; color:#4a148c; font-weight:bold;">👑 Modo Especialista</p>
-                <div class="form-group"><label>Turma:</label><select id="grade-turma" class="input-admin"><option value="">-- Escolha --</option>${CLASSES_LIST.map(c => `<option value="${c}">${c}</option>`).join('')}</select></div>
-                <div class="form-group"><label>Matéria:</label><select id="grade-materia" class="input-admin"><option value="">-- Escolha --</option>${listSubjects.map(sj => `<option value="${sj}">${sj}</option>`).join('')}</select></div>
-            </div>`;
-    } else {
-        const myFixedClass = (currentUser.classes && currentUser.classes.length > 0) ? currentUser.classes[0] : 'Sem Turma Vinculada';
-        formGradeHTML = `
-            <div style="background:#fafafa; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;">
-                <p style="font-size:0.8em; color:#666;">👤 Modo Professor</p>
-                <div class="form-group"><label>Sua Turma:</label><input type="text" id="grade-turma" class="input-admin" style="background:#eee; color:#555; font-weight:bold;" value="${myFixedClass}" readonly></div>
-                <div class="form-group"><label>Matéria:</label><select id="grade-materia" class="input-admin"><option value="">-- Escolha --</option>${listSubjects.map(sj => `<option value="${sj}">${sj}</option>`).join('')}</select></div>
-            </div>`;
-    }
-
-    // Tabela da Grade
-    let gradeListHTML = '';
-    const myGradeList = isAuthorizedForExtras ? config.grade : config.grade.filter(g => g.profEmail === currentUser.email || g.turma === (currentUser.classes ? currentUser.classes[0] : ''));
-    
-    myGradeList.sort((a, b) => {
-        const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-        if(days.indexOf(a.dia) !== days.indexOf(b.dia)) return days.indexOf(a.dia) - days.indexOf(b.dia);
-        return a.hora.localeCompare(b.hora);
-    });
-
-    if (myGradeList.length === 0) {
-        gradeListHTML = `<div style="padding:15px; text-align:center; color:#999; font-style:italic;">Nenhuma aula cadastrada ainda.</div>`;
-    } else {
-        gradeListHTML = `
-        <div style="max-height:300px; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
-            <table style="width:100%; border-collapse:collapse; font-size:0.85em;">
-                <thead style="background:#eee; position:sticky; top:0;">
-                    <tr>
-                        <th style="padding:10px; text-align:left; width:30%; border-bottom:2px solid #ddd;">Dia / Hora</th>
-                        <th style="padding:10px; text-align:left; width:50%; border-bottom:2px solid #ddd;">Turma / Matéria</th>
-                        <th style="padding:10px; text-align:center; width:20%; border-bottom:2px solid #ddd;">Ação</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${myGradeList.map((g, idx) => `
-                        <tr style="border-bottom:1px solid #f0f0f0; background: ${idx % 2 === 0 ? '#fff' : '#f9f9f9'};">
-                            <td style="padding:10px; text-align:left; vertical-align:middle;">
-                                <strong style="color:#0d47a1;">${g.dia}</strong><br>
-                                <span style="color:#666;">${g.hora}</span>
-                            </td>
-                            <td style="padding:10px; text-align:left; vertical-align:middle;">
-                                <strong>${g.turma}</strong><br>
-                                <span style="color:#444;">${g.materia}</span><br>
-                                <i style="font-size:0.8em; color:#888;">${g.prof}</i>
-                            </td>
-                            <td style="padding:10px 2px 10px 10px; text-align:right; vertical-align:middle;">
-                                ${ (isAuthorizedForExtras || g.profEmail === currentUser.email) ? 
-                                `<button onclick="deleteGradeItem('${g.id}')" 
-                                         style="height:35px; padding: 0 15px;
-                                                background-color: #e3f2fd !important; 
-                                                color: #0d47a1 !important; 
-                                                border: 1px solid #bbdefb !important; 
-                                                box-shadow: 0px 3px 0px #90caf9 !important; 
-                                                border-radius: 6px !important; 
-                                                cursor: pointer; 
-                                                font-weight: bold;
-                                                display:inline-flex; align-items:center; justify-content:center; gap: 6px;
-                                                transition: 0.1s;"
-                                         onmousedown="this.style.boxShadow='0px 1px 0px #90caf9'; this.style.transform='translateY(2px)'"
-                                         onmouseup="this.style.boxShadow='0px 3px 0px #90caf9'; this.style.transform='translateY(0)'"
-                                         onmouseleave="this.style.boxShadow='0px 3px 0px #90caf9'; this.style.transform='translateY(0)'">
-                                    🗑️ Excluir
-                                </button>` : '' }
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+// --- 5. LÓGICA DA GRADE (A NOVA QUE VOCÊ GOSTOU) ---
+let formGradeHTML = '';
+if (isSpecialist) {
+    formGradeHTML = `
+        <div style="background:#f3e5f5; padding:10px; border-radius:8px; border:1px solid #e1bee7; margin-bottom:10px;">
+            <p style="font-size:0.8em; color:#4a148c; font-weight:bold;">👑 Modo Especialista</p>
+            <div class="form-group"><label>Turma:</label><select id="grade-turma" class="input-admin"><option value="">-- Escolha --</option>${CLASSES_LIST.map(c => `<option value="${c}">${c}</option>`).join('')}</select></div>
+            <div class="form-group"><label>Matéria:</label><select id="grade-materia" class="input-admin"><option value="">-- Escolha --</option>${listSubjects.map(sj => `<option value="${sj}">${sj}</option>`).join('')}</select></div>
         </div>`;
-    }
+} else {
+    const myFixedClass = (currentUser.classes && currentUser.classes.length > 0) ? currentUser.classes[0] : 'Sem Turma Vinculada';
+    formGradeHTML = `
+        <div style="background:#fafafa; padding:10px; border-radius:8px; border:1px solid #ddd; margin-bottom:10px;">
+            <p style="font-size:0.8em; color:#666;">👤 Modo Professor</p>
+            <div class="form-group"><label>Sua Turma:</label><input type="text" id="grade-turma" class="input-admin" style="background:#eee; color:#555; font-weight:bold;" value="${myFixedClass}" readonly></div>
+            <div class="form-group"><label>Matéria:</label><select id="grade-materia" class="input-admin"><option value="">-- Escolha --</option>${listSubjects.map(sj => `<option value="${sj}">${sj}</option>`).join('')}</select></div>
+        </div>`;
+}
+
+// Tabela da Grade
+let gradeListHTML = '';
+const myGradeList = isAuthorizedForExtras ? config.grade : config.grade.filter(g => g.profEmail === currentUser.email || g.turma === (currentUser.classes ? currentUser.classes[0] : ''));
+
+myGradeList.sort((a, b) => {
+    const days = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    if(days.indexOf(a.dia) !== days.indexOf(b.dia)) return days.indexOf(a.dia) - days.indexOf(b.dia);
+    return a.hora.localeCompare(b.hora);
+});
+
+if (myGradeList.length === 0) {
+    gradeListHTML = `<div style="padding:15px; text-align:center; color:#999; font-style:italic;">Nenhuma aula cadastrada ainda.</div>`;
+} else {
+    gradeListHTML = `
+    <div style="max-height:300px; overflow-y:auto; border:1px solid #eee; border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85em;">
+            <thead style="background:#eee; position:sticky; top:0;">
+                <tr>
+                    <th style="padding:10px; text-align:left; width:30%; border-bottom:2px solid #ddd;">Dia / Hora</th>
+                    <th style="padding:10px; text-align:left; width:45%; border-bottom:2px solid #ddd;">Turma / Matéria</th>
+                    <th style="padding:10px; text-align:center; width:25%; border-bottom:2px solid #ddd;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${myGradeList.map((g, idx) => `
+                    <tr style="border-bottom:1px solid #f0f0f0; background: ${idx % 2 === 0 ? '#fff' : '#f9f9f9'};">
+                        <td style="padding:10px; text-align:left; vertical-align:middle;">
+                            <strong style="color:#0d47a1;">${g.dia}</strong><br>
+                            <span style="color:#666;">${g.hora}</span>
+                        </td>
+                        <td style="padding:10px; text-align:left; vertical-align:middle;">
+                            <strong>${g.turma}</strong><br>
+                            <span style="color:#444;">${g.materia}</span><br>
+                            <i style="font-size:0.8em; color:#888;">${g.prof}</i>
+                        </td>
+                        <td style="padding:10px 10px 10px 5px; text-align:right; vertical-align:middle;">
+                            ${ (isAuthorizedForExtras || g.profEmail === currentUser.email) ? 
+                            `<div style="display:flex; justify-content:flex-end; gap:6px;">
+                                
+                                <button onclick="editarProfessorDaLista(${config.grade.indexOf(g)})" 
+                                        style="height:35px; padding: 0 10px;
+                                               background-color: #fff9c4 !important; 
+                                               color: #f57f17 !important; 
+                                               border: 1px solid #fff59d !important; 
+                                               box-shadow: 0px 3px 0px #ffe082 !important; 
+                                               border-radius: 6px !important; 
+                                               cursor: pointer; 
+                                               font-weight: bold;
+                                               display:inline-flex; align-items:center; justify-content:center; gap: 4px;
+                                               transition: 0.1s;"
+                                        onmousedown="this.style.boxShadow='0px 1px 0px #ffe082'; this.style.transform='translateY(2px)'"
+                                        onmouseup="this.style.boxShadow='0px 3px 0px #ffe082'; this.style.transform='translateY(0)'"
+                                        onmouseleave="this.style.boxShadow='0px 3px 0px #ffe082'; this.style.transform='translateY(0)'">
+                                    ✏️ Prof.
+                                </button>
+
+                                <button onclick="deleteGradeItem('${g.id}')" 
+                                        style="height:35px; padding: 0 10px;
+                                               background-color: #ffebee !important; 
+                                               color: #c62828 !important; 
+                                               border: 1px solid #ffcdd2 !important; 
+                                               box-shadow: 0px 3px 0px #ef9a9a !important; 
+                                               border-radius: 6px !important; 
+                                               cursor: pointer; 
+                                               font-weight: bold;
+                                               display:inline-flex; align-items:center; justify-content:center; gap: 4px;
+                                               transition: 0.1s;"
+                                        onmousedown="this.style.boxShadow='0px 1px 0px #ef9a9a'; this.style.transform='translateY(2px)'"
+                                        onmouseup="this.style.boxShadow='0px 3px 0px #ef9a9a'; this.style.transform='translateY(0)'"
+                                        onmouseleave="this.style.boxShadow='0px 3px 0px #ef9a9a'; this.style.transform='translateY(0)'">
+                                    🗑️ Excluir
+                                </button>
+                            </div>` : '' }
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>`;
+}
+
 
 // --- 6. SEÇÃO DIÁRIO (Checkboxes) - COM VISUAL 3D APRIMORADO ---
     const currentYear = new Date().getFullYear();
@@ -4257,7 +4270,7 @@ ${exceptionsSection}
          onmouseup="this.style.boxShadow='0px 4px 0px #90a4ae'; this.style.transform='translateY(0)'"
          onmouseleave="this.style.boxShadow='0px 4px 0px #90a4ae'; this.style.transform='translateY(0)'">
          
-         <span style="display:flex; align-items:center; gap:8px;">🔒 Troca de Perfil, Senha & Reset</span>
+         <span style="display:flex; align-items:center; gap:8px;">🔒 Troca de Perfil e Senha</span>
          <span>▼</span>
     </div>
 
@@ -6217,32 +6230,7 @@ function openClass(className) {
         <button class="tab-button" onclick="openTab('weekly', this); setTimeout(function(){ populateWeeklySubjects(); renderWeekly(); }, 100);">5. SEMANÁRIO</button>
     </div>
 
-    <div id="tab-attend" class="tab-content active">
-        <div class="form-group" style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #90caf9;">
-            <div id="divSeletorMateria">
-                <label style="color: #1565c0; font-weight: bold;">SELECIONAR MATÉRIA</label>
-                <select id="selMateriaChamada" onchange="renderAttend()" style="width: 100%; padding: 10px; border: 1px solid #1565c0; border-radius: 5px; font-weight: bold; background: #fff;">
-                    <option value="TODAS">TODAS AS MATÉRIAS</option>
-                    <option value="portugues">PORTUGUÊS</option>
-                    <option value="matematica">MATEMÁTICA</option>
-                    <option value="historia">HISTÓRIA</option>
-                    <option value="geografia">GEOGRAFIA</option>
-                    <option value="ciencias">CIÊNCIAS</option>
-                    <option value="arte">ARTE</option>
-                    <option value="ingles">INGLÊS (GERAL)</option>
-                    <option value="ingles_1b">INGLÊS 1º ANO B</option> 
-                    <option value="edfisica">ED. FÍSICA</option>
-                </select>
-            </div>
-            
-            <div id="divCheckEspecialistas" style="margin-top: 15px;">
-                <label style="display:flex; align-items:center; cursor:pointer; user-select:none;">    
-                    <input type="checkbox" id="chkIncluirEspecialistas" style="width: 20px; height: 20px; margin-right: 10px;" onchange="window.onToggleEspecialistas()">
-                    <span style="font-weight:bold; color:#d32f2f;">INCLUIR ESPECIALISTA DO DIA</span>
-                </label>
-            </div>
-        </div>
-
+   <div id="tab-attend" class="tab-content active">
         <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">        
             <div class="form-group" style="margin:0">
                 <label>Data da Chamada</label>
@@ -6258,7 +6246,9 @@ function openClass(className) {
         <button class="main-button save-button" style="margin-top:15px; width:100%; height: 45px; background-color: #e8f5e9 !important; color: #1b5e20 !important; border: 1px solid #a5d6a7 !important; box-shadow: 0px 5px 0px #81c784 !important; border-radius: 8px !important; font-weight: bold !important; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="saveAttend()">
             📝 Salvar Chamada
         </button>
-    </div> <div id="tab-diary" class="tab-content">
+    </div> 
+    
+    <div id="tab-diary" class="tab-content">
         <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end;">
             <div class="form-group" style="flex:1;">
                 <label>Data</label>
@@ -6298,7 +6288,9 @@ function openClass(className) {
             <button onclick="window.acaoVisualizarDiario()" style="flex:1; height:38px; padding:0 15px; background-color:#e3f2fd !important; color:#0d47a1 !important; border:1px solid #bbdefb !important; box-shadow:0px 4px 0px #d1e9ff !important; border-radius:6px !important; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.1s;"><span style="font-size: 1.1em;">📊</span> VISUALIZAR CONTEÚDO</button>
             <button onclick="abrirModalExcluirConteudoProgramatico()" style="flex:1; height:38px; padding:0 15px; background-color:#e3f2fd !important; color:#0d47a1 !important; border:1px solid #bbdefb !important; box-shadow:0px 4px 0px #d1e9ff !important; border-radius:6px !important; cursor:pointer; font-weight:bold; font-size:13px; display:flex; align-items:center; justify-content:center; gap:6px; transition:all 0.1s;"><span style="font-size: 1.1em;">🧹</span> LIMPAR CONTEÚDO</button>
         </div>
-    </div> <div id="tab-prelim" class="tab-content">
+    </div> 
+    
+    <div id="tab-prelim" class="tab-content">
         <div style="display:flex; gap:15px; margin-bottom:15px; align-items:flex-end; flex-wrap:wrap;">
             <div class="form-group" style="margin:0; flex:1;"><label>Bimestre</label><select id="sel-prelim-bim" onchange="renderPrelim()"><option value="1">1º Bimestre</option><option value="2">2º Bimestre</option><option value="3">3º Bimestre</option><option value="4">4º Bimestre</option></select></div>
             <div class="form-group" style="margin:0; flex:1;"><label>Disciplina</label><select id="sel-prelim-subj" onchange="renderPrelim()"></select></div>
@@ -8436,6 +8428,31 @@ function finalizarSalvamentoPopUp() {
     if (typeof renderConfig === 'function') renderConfig();
 }
 
+
+// 🟢 BLOCO NOVO: Edita o professor direto da lista principal
+function editarProfessorDaLista(indexOriginal) {
+    // 1. Puxa a aula específica
+    const aula = config.grade[indexOriginal];
+    
+    // 2. Abre a caixinha perguntando o novo nome (já vem com o nome antigo preenchido)
+    const novoNome = prompt(`Editar Professor(a) de ${aula.materia} (${aula.dia} - ${aula.hora}):`, aula.prof);
+
+    // 3. Se o professor digitou algo e não clicou em "Cancelar"
+    if (novoNome !== null) {
+        // Atualiza a memória
+        config.grade[indexOriginal].prof = novoNome.trim();
+        
+        // 🚀 Salva no Firebase imediatamente
+        if (typeof saveSystem === 'function') saveSystem();
+        
+        // 🔄 Recarrega a lista para mostrar o novo nome na tela
+        if (typeof renderConfig === 'function') renderConfig();
+        
+        // Se a sua tela principal for renderizada por outra função (ex: renderAdminClasses), 
+        // descomente a linha abaixo para garantir a atualização:
+        // if (typeof renderAdminClasses === 'function') renderAdminClasses();
+    }
+}
 
 
 
@@ -11065,197 +11082,11 @@ function abrirJanelaImpressao(srcFinal, className, rangeText, valores, container
 
 
 // ==========================================
-// 🧊 TELA DE GESTÃO MASTER (CONGELADA TEMPORARIAMENTE)
-// ==========================================
-function renderMasterPanel() {
-    // Apenas um aviso simples para você saber que o comando ainda existe
-    alert("🛠️ Júnior, esta função está 'congelada' para priorizar o acesso dos professores. Use a sua cópia de backup para ajustes administrativos.");
-    
-    // Retorna para a Home automaticamente para não travar a tela
-    if(typeof renderHome === 'function') renderHome();
-}
-
-// ==========================================
-// FUNÇÕES DO BANCO DE DADOS - GESTÃO MASTER
-// ==========================================
-
-// 1. VINCULAR PROFESSOR
-function masterVincularProf() {
-    const profEmail = document.getElementById('novo-prof-email').value.trim().toLowerCase();
-    const turmaSelecionada = document.getElementById('novo-prof-turma').value;
-
-    if (!profEmail || !turmaSelecionada) {
-        return alert("⚠️ Preencha o e-mail do professor e selecione a turma!");
-    }
-
-    const docRef = db.collection('users').doc(profEmail);
-    
-    docRef.get().then(doc => {
-        if (doc.exists) {
-            salvarTurmaNoPerfil(docRef, turmaSelecionada);
-        } else {
-            db.collection('users').where('email', '==', profEmail).get()
-            .then(snapshot => {
-                if (!snapshot.empty) {
-                    snapshot.forEach(docBusca => salvarTurmaNoPerfil(docBusca.ref, turmaSelecionada));
-                } else {
-                    alert(`❌ O e-mail '${profEmail}' não foi encontrado!\n\nDICA: Peça para a professora fazer login no sistema pelo menos uma vez para que o perfil dela seja criado no banco de dados.`);
-                }
-            });
-        }
-    }).catch(error => {
-        alert("Erro na busca: " + error.message);
-    });
-
-    function salvarTurmaNoPerfil(referencia, turma) {
-        referencia.set({
-            classes: firebase.firestore.FieldValue.arrayUnion(turma)
-        }, { merge: true }).then(() => {
-            alert(`✅ SUCESSO! A turma "${turma}" foi vinculada!\n\nQuando a professora logar, o botão já aparecerá para ela.`);
-            document.getElementById('novo-prof-email').value = ""; 
-            document.getElementById('novo-prof-turma').value = ""; 
-        }).catch(error => alert("Erro ao salvar o vínculo: " + error.message));
-    }
-}
-
-
-
-// 🧊 FUNÇÃO CONGELADA: LISTAR TURMAS (MASTER)
-// Esta função foi desativada para priorizar o portal do professor.
-function carregarTurmasGestaoMaster() {
-    console.log("ℹ️ carregarTurmasGestaoMaster: Função congelada temporariamente.");
-    // Não faz nada, evitando chamadas desnecessárias ao banco de dados.
-    return;
-}
-
-
-// 🧊 FUNÇÃO CONGELADA: CRIAR TURMA (MASTER)
-// Esta função foi desativada para focar na estabilidade do portal dos professores.
-function masterCriarTurma() {
-    console.log("ℹ️ masterCriarTurma: Função congelada. Nenhuma turma será criada no momento.");
-    // Bloqueia a criação de documentos na coleção 'classes'.
-    return;
-}
-
-// 🧊 FUNÇÃO CONGELADA: EXCLUIR TURMA (MASTER)
-// Desativada para garantir a segurança dos dados durante o período de lançamento.
-function masterExcluirTurma(nomeTurmaParaExcluir) {
-    console.log("ℹ️ masterExcluirTurma: Função em modo de espera. Nenhuma alteração foi realizada.");
-    // Bloqueia a exclusão definitiva de documentos na coleção 'classes'.
-    return;
-}
-
-// --- SUPER PODER: MODO DEUS (VER TODAS AS TURMAS) ---
-function abrirModoDeus() {
-    const gridContainer = document.getElementById('grid-turmas-container');
-    gridContainer.innerHTML = '<p style="color: #ff9800; font-weight: bold;">Carregando toda a escola... 👁️</p>';
-
-    // Puxa TODAS as turmas do banco de dados (coleção 'classes')
-    db.collection('classes').get().then(snap => {
-        let todasTurmas = [];
-        snap.forEach(doc => todasTurmas.push(doc.id));
-        
-        // Ordena em ordem alfabética para ficar organizado
-        todasTurmas.sort();
-
-        // Substitui a grade do professor pela grade global (em cor laranja para diferenciar)
-        gridContainer.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; width: 100%; padding-bottom: 10px; background: #fff3e0; padding: 15px; border-radius: 8px; border: 1px dashed #ffb74d;">
-                ${todasTurmas.map(idTurma => `
-                    <button class="main-button class-button" 
-                            style="height: 40px; width: 100%; background-color: #ffe0b2 !important; color: #e65100 !important; border: 1px solid #ffcc80 !important; box-shadow: 0px 4px 0px #fb8c00 !important; border-radius: 6px !important; font-weight: bold !important; font-size: clamp(9px, 1vw, 12px) !important; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; white-space: nowrap; padding: 0 4px;" 
-                            onclick="openClass('${idTurma}')"
-                            onmousedown="this.style.boxShadow='0px 2px 0px #fb8c00'; this.style.transform='translateY(2px)'"
-                            onmouseup="this.style.boxShadow='0px 4px 0px #fb8c00'; this.style.transform='translateY(0)'"
-                            onmouseleave="this.style.boxShadow='0px 4px 0px #fb8c00'; this.style.transform='translateY(0)'">
-                        ${idTurma}
-                    </button>
-                `).join('')}
-            </div>
-            <p style="font-size: 11px; color: #e65100; text-align: center; margin-top: 5px;">Você está no Modo Gestão. Cuidado ao alterar dados de outros professores.</p>
-        `;
-    }).catch(error => {
-        gridContainer.innerHTML = `<p style="color: red;">Erro ao carregar turmas globais: ${error.message}</p>`;
-    });
-}
-
-// ==========================================
-// MOTOR DE RH E ATRIBUIÇÃO DE TURMAS (GESTÃO MASTER)
-// ==========================================
-
-
-// 🧊 FUNÇÃO CONGELADA: CARREGAR EQUIPE E ATRIBUIÇÕES
-// Desativada temporariamente para focar no lançamento para os professores.
-function carregarProfessoresGestaoMaster() {
-    console.log("ℹ️ carregarProfessoresGestaoMaster: Função em modo de espera.");
-    // Bloqueia as consultas ao Firebase (users e classes) para economizar recursos.
-    return;
-}
-
-
-// 🧊 FUNÇÃO CONGELADA: ATRIBUIR TURMAS AO PROFESSOR (MASTER)
-// Desativada temporariamente para focar no compartilhamento perfeito com a equipe.
-function masterSalvarTurmasProf(profId) {
-    console.log("ℹ️ masterSalvarTurmasProf: Função em modo de espera. Nenhuma alteração de acesso foi gravada.");
-    // Bloqueia a atualização do array 'classes' na coleção 'users'.
-    return;
-}
-
-// 🧊 FUNÇÃO CONGELADA: CRIAR NOVO PROFESSOR (MASTER)
-// Esta função está em modo de espera para garantir a estabilidade do login dos professores.
-function masterCriarProfessor() {
-    console.log("ℹ️ masterCriarProfessor: Função congelada. Nenhuma conta secundária será criada agora.");
-    // Bloqueia a criação de autenticação e perfis na coleção 'users'.
-    return;
-}
-
-// 🧊 FUNÇÃO CONGELADA: EXCLUIR PROFESSOR (MASTER)
-// Desativada temporariamente para evitar exclusões acidentais de acessos.
-function masterExcluirProf(profId, nome) {
-    console.log("ℹ️ masterExcluirProf: Função congelada. Ninguém será removido do sistema agora.");
-    // Bloqueia a exclusão de documentos na coleção 'users'.
-    return;
-}
-
-// 5. ADICIONAR NOVA MATÉRIA GERAL
-function masterCriarMateria() {
-    const nomeMateria = document.getElementById('nova-materia-nome').value.trim().toUpperCase();
-    
-    if(!nomeMateria) return alert("⚠️ Digita o nome da nova matéria!");
-    
-    db.collection('materias_gerais').doc(nomeMateria).set({
-        nome: nomeMateria,
-        dataCriacao: new Date().toISOString()
-    }).then(() => {
-        document.getElementById('nova-materia-nome').value = '';
-        alert("✅ Matéria adicionada à base de dados com sucesso!");
-    }).catch(e => alert("Erro ao criar matéria: " + e.message));
-}
-
-// ======================================================
-// 🧊 BLOCO MEGAFONE CENTRAL - MODO DE HIBERNAÇÃO
-// ======================================================
-
-function masterDispararAviso() {
-    console.log("ℹ️ masterDispararAviso: Função congelada temporariamente.");
-    return;
-}
-
-// 🧊 FUNÇÃO CONGELADA: PARANDO O ERRO DE PERMISSÃO
-function iniciarEscutaAvisoGlobal() {
-    console.log("ℹ️ iniciarEscutaAvisoGlobal: Escuta desativada.");
-    return;
-}
-
-// O setTimeout abaixo deve permanecer comentado para não disparar o erro
-// setTimeout(iniciarEscutaAvisoGlobal, 2000);
-
-// ==========================================
 // SEGURANÇA: VERIFICADOR DE DIA LETIVO
 // ==========================================
 function verificarDiaLetivo(dataIso) {
     // dataIso deve vir no formato 'YYYY-MM-DD'
-    // Colocamos T12:00:00 para evitar que o fuso horário mude o dia sem querer
+    // Colocamos T12:00:00 para evitar que o fuso horário mude o dia sem querer 
     const dataVerificar = new Date(dataIso + 'T12:00:00'); 
     const diaSemana = dataVerificar.getDay();
 
@@ -11479,7 +11310,7 @@ function adminToggleDayBlock() {
 
     // Salva e atualiza tudo
     if (typeof saveSystem === 'function') saveSystem();
-    if (typeof renderEventTicker === 'function') renderEventTicker();
+    if (typeof renderEventTicker === 'function') renderEventTicker(); 
     renderAdminSpecialDays(); 
 }
 
@@ -11576,7 +11407,7 @@ window.adminDeleteDate = async function(dateKey) {
                     // 4. Empacota tudo novamente em texto (agora sem a data)
                     const novoTextoConfig = JSON.stringify(configNuvem);
 
-                    // 5. Envia o texto limpo direto para o Firebase, sobrescrevendo o antigo
+                    // 5. Envia o texto limpo direto para o Firebase, sobrescrevendo o antigo 
                     await docRef.update({
                         gp_v9_config: novoTextoConfig
                     });
