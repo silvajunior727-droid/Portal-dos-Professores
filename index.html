@@ -1679,10 +1679,10 @@ window.CLASSES_ALL = window.CLASSESLIST;
 
 </div>
 
-<div style="display: flex; justify-content: flex-end; align-items: center; width: 100%; margin-top: 20px;">
+<div style="display: flex; align-items: center; width: 100%; margin-top: 20px; gap: 15px;">
     
     <button class="main-button" onclick="fecharModal()" 
-            style="margin: 0 0 0 auto !important; display: inline-flex !important; flex: none !important; width: 120px !important; height: 42px !important; 
+            style="display: inline-flex !important; flex: none !important; width: 120px !important; height: 42px !important; 
                    background-color: #ffebee !important; 
                    color: #c62828 !important; 
                    border: 1px solid #ffcdd2 !important; 
@@ -1696,8 +1696,6 @@ window.CLASSES_ALL = window.CLASSESLIST;
         ⏻ Sair
     </button>
     
-</div>
-
     <button class="main-button" onclick="salvarEventoPeloCalendario()" 
             style="flex:1; height:42px; 
                    background-color: #e8f5e9 !important; 
@@ -1712,6 +1710,8 @@ window.CLASSES_ALL = window.CLASSESLIST;
             onmouseleave="this.style.boxShadow='0px 4px 0px #66bb6a'; this.style.transform='translateY(0)'">
         💾 Salvar
     </button>
+
+</div>
 
 </div>
 </div>
@@ -5118,6 +5118,10 @@ function saveNotice(active) {
     maxViews: parseInt(document.getElementById("cfg-notice-maxviews")?.value ?? 1, 10)
   };
   saveSystem();
+  
+  // 🐕 O CÃO DE GUARDA DORME AQUI!
+  temAlteracoesNaoSalvas = false;
+  
   alert(active ? "Aviso Ativado!" : "Aviso Desativado!");
 }
 
@@ -5290,7 +5294,16 @@ function guardDateOrStop(dateKey, contexto = "AÇÃO") {
 
 function addSlideImage() { const url = document.getElementById('new-slide-url').value; if(!url) return; config.slideshow.images.push(url); saveSystem(); renderConfig(); setTimeout(() => toggleConfig('slideshow-config-content'), 100); }
         function removeSlideImage(i) { config.slideshow.images.splice(i, 1); saveSystem(); renderConfig(); setTimeout(() => toggleConfig('slideshow-config-content'), 100); }
-        function saveSlideshowConfig() { config.slideshow.speed = parseInt(document.getElementById('cfg-slide-speed').value); config.slideshow.active = (document.getElementById('cfg-slide-active').value === 'true'); saveSystem(); alert('Salvo!'); }
+        function saveSlideshowConfig() { 
+    config.slideshow.speed = parseInt(document.getElementById('cfg-slide-speed').value); 
+    config.slideshow.active = (document.getElementById('cfg-slide-active').value === 'true'); 
+    saveSystem(); 
+    
+    // 🐕 O CÃO DE GUARDA DORME AQUI!
+    temAlteracoesNaoSalvas = false;
+    
+    alert('Salvo!'); 
+}
 
         function getDriveFolderUrl(teacherName, docType) {
             const folders = DRIVE_FOLDERS_MAP[teacherName];
@@ -9212,7 +9225,7 @@ async function salvarEventoPeloCalendario() {
         // Funções auxiliares (mantidas)
         function getBlockInfo(dateKey) {
             const res = { blocked: false, reason: "" };
-            const store = (config && config.exceptions) ? config.exceptions : {};
+            const store = (config && config.exceptions) ? config.exceptions : {}; 
             const ex = store[dateKey];
 
             if (ex && typeof ex.blocked === "boolean") {
@@ -9266,6 +9279,9 @@ async function salvarEventoPeloCalendario() {
             saveSystem();
         }
 
+        // 🐕 O CÃO DE GUARDA DORME AQUI! (Salvamento 1)
+        temAlteracoesNaoSalvas = false;
+
         alert("✅ Evento salvo com sucesso!");
 
         fecharModal();
@@ -9276,9 +9292,6 @@ async function salvarEventoPeloCalendario() {
         console.error("Erro ao salvar evento:", err);
         alert("Erro técnico ao salvar.");
     }
-
-
-
 
 
 
@@ -9337,7 +9350,7 @@ async function salvarEventoPeloCalendario() {
   }
 
   // Se for edição, remove o antigo antes de salvar o novo
-  if (antigoTitulo !== "-1") {
+  if (typeof antigoTitulo !== 'undefined' && antigoTitulo !== "-1") {
     eventos = eventos.filter(e => !(e.date === dataInicio && e.title === antigoTitulo));
   }
 
@@ -9367,6 +9380,10 @@ async function salvarEventoPeloCalendario() {
   }
 
   localStorage.setItem('calendarEvents', JSON.stringify(eventos));
+  
+  // 🐕 O CÃO DE GUARDA DORME AQUI! (Salvamento 2)
+  temAlteracoesNaoSalvas = false;
+  
   fecharModal();
   renderCalendarioAnual();
   renderEventTicker();
