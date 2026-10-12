@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mudamos de Endereço - Portal GP</title>
+  
+  <style>
+    /* Reset e fundo da página */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Container do Card */
+    .aviso-mudanca-card {
+      background: #ffffff;
+      max-width: 480px;
+      width: 90%;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      padding: 40px 30px;
+      text-align: center;
+      border-top: 6px solid;
+      border-image: linear-gradient(to right, #4F46E5, #EC4899) 1;
+    }
+
+    /* Estilo do Ícone */
+    .icone-wrapper {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 50%;
+      margin-bottom: 24px;
+      animation: flutuarLateral 2s ease-in-out infinite;
+    }
+
+    /* Textos principais */
+    .aviso-titulo {
+      color: #1f2937;
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0 0 16px 0;
+    }
+
+    .aviso-texto {
+      color: #4b5563;
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 0 32px 0;
+    }
+
+    /* Botão Principal */
+    .btn-novo-endereco {
+      display: inline-block;
+      background: linear-gradient(135deg, #4F46E5 0%, #EC4899 100%);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 16px 32px;
+      border-radius: 50px;
+      box-shadow: 0 10px 20px rgba(79, 70, 229, 0.25);
+      transition: all 0.3s ease;
+      margin-bottom: 24px;
+    }
+
+    .btn-novo-endereco:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 25px rgba(79, 70, 229, 0.4);
+    }
+
+    /* Área do Redirecionamento Automático */
+    .area-redirecionamento {
+      border-top: 1px solid #f3f4f6;
+      padding-top: 20px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+
+    .texto-contador {
+      color: #6b7280;
+      font-size: 14px;
+      margin: 0 0 12px 0;
+    }
+
+    .texto-contador strong {
+      color: #4F46E5;
+      font-size: 16px;
+    }
+
+    /* Botão Cancelar */
+    .btn-cancelar {
+      background: transparent;
+      border: 1px solid #d1d5db;
+      color: #6b7280;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-cancelar:hover {
+      background: #f3f4f6;
+      color: #374151;
+      border-color: #9ca3af;
+    }
+
+    /* Rodapé com link antigo riscado */
+    .aviso-rodape {
+      font-size: 13px;
+      color: #9ca3af;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .url-antiga {
+      text-decoration: line-through;
+      color: #ef4444;
+      word-break: break-all;
+    }
+
+    /* Animação do ícone */
+    @keyframes flutuarLateral {
+      0%, 100% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="aviso-mudanca-card">
+    
+    <!-- Ícone SVG animado -->
+    <div class="icone-wrapper">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="60" height="60" fill="none">
+        <defs>
+          <linearGradient id="grad-icon" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4F46E5" />
+            <stop offset="100%" stop-color="#EC4899" />
+          </linearGradient>
+        </defs>
+        <path d="M4 12h12M12 5l7 7-7 7" stroke="url(#grad-icon)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="5" cy="12" r="2" fill="url(#grad-icon)" opacity="0.6"/>
+      </svg>
+    </div>
+
+    <!-- Mensagem -->
+    <h1 class="aviso-titulo">Mudamos de Endereço!</h1>
+    
+    <p class="aviso-texto">
+      O <strong>Portal dos Professores</strong> foi atualizado para uma versão melhor e este endereço foi <strong>desativado</strong>.
+    </p>
+    
+    <!-- Botão de Ação -->
+    <a href="https://silvajunior727-droid.github.io/PORTAL_GP/" class="btn-novo-endereco">
+      Acessar o Novo Portal GP
+    </a>
+
+    <!-- Área do Contador (Novidade) -->
+    <div class="area-redirecionamento" id="area-redirecionamento">
+      <p class="texto-contador">Você será redirecionado automaticamente em <strong id="segundos">30</strong> segundos.</p>
+      <button class="btn-cancelar" id="btn-cancelar">Cancelar redirecionamento</button>
+    </div>
+
+    <!-- Informação Adicional -->
+    <p class="aviso-rodape">
+      Por favor, atualize seus favoritos.<br>
+      <span class="url-antiga">silvajunior727-droid.github.io/Portal-dos-Professores/</span>
+    </p>
+  </div>
+
+  <!-- Lógica JavaScript do Contador e Cancelamento -->
+  <script>
+    // Configurações iniciais
+    let tempoRestante = 30; // Tempo em segundos
+    const urlNovoPortal = "https://silvajunior727-droid.github.io/PORTAL_GP/";
+    
+    const elementoSegundos = document.getElementById('segundos');
+    const areaRedirecionamento = document.getElementById('area-redirecionamento');
+    const btnCancelar = document.getElementById('btn-cancelar');
+
+    // Cria o contador regressivo que roda a cada 1 segundo (1000 ms)
+    const intervalo = setInterval(function() {
+      tempoRestante--; // Diminui 1 segundo
+      elementoSegundos.textContent = tempoRestante; // Atualiza o número na tela
+
+      // Quando chegar a zero, redireciona
+      if (tempoRestante <= 0) {
+        clearInterval(intervalo);
+        window.location.href = urlNovoPortal;
+      }
+    }, 1000);
+
+    // O que acontece quando clica no botão "Cancelar"
+    btnCancelar.addEventListener('click', function() {
+      clearInterval(intervalo); // Para o cronômetro
+      // Substitui o conteúdo da área do contador por uma mensagem de aviso
+      areaRedirecionamento.innerHTML = '<p class="texto-contador">Redirecionamento automático <strong>cancelado</strong>.</p>';
+    });
+  </script>
+
+</body>
+</html>
